@@ -1,0 +1,349 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '../../components/layout/Layout';
+import { DataTable } from '../../components/common/DataTable';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { productService, Product, ProductFilters } from '../../services/productService';
+
+const statusColors = {
+  active: 'bg-status-green/10 text-status-green',
+  draft: 'bg-status-yellow/10 text-status-yellow',
+  archived: 'bg-status-red/10 text-status-red',
+};
+
+const ProductList: React.FC = () => {
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [filters, setFilters] = useState<ProductFilters>({
+    search: '',
+    category: '',
+    brand: '',
+    minPrice: '',
+    maxPrice: '',
+    stockStatus: '',
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  useEffect(() => {
+    fetchProducts();
+  }, [filters, currentPage]);
+
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await productService.getProducts({
+        ...filters,
+        page: currentPage,
+        limit: 10,
+      });
+      setProducts(result.data);
+      setTotalPages(result.totalPages);
+    } catch (err) {
+      setError('Failed to fetch products');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setCurrentPage(1);
+  };
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedProducts.length === 0) return;
+    try {
+      switch (action) {
+        case 'delete':
+          await productService.bulkDeleteProducts(selectedProducts);
+          break;
+        case 'updateStatus':
+          await productService.bulkUpdateProducts(selectedProducts, { status: 'active' });
+          break;
+        case 'updatePrice':
+          const newPrice = prompt('Enter new price:');
+          if (newPrice) {
+            await productService.bulkUpdateProducts(selectedProducts, { price: parseFloat(newPrice) });
+          }
+          break;
+      }
+      fetchProducts();
+      setSelectedProducts([]);
+    } catch (err) {
+      setError('Failed to perform bulk action');
+    }
+  };
+
+  const handleQuickEdit = async (id: string, field: string, value: string) => {
+    try {
+      await productService.updateProduct(id, { [field]: value });
+      fetchProducts();
+    } catch (err) {
+      setError('Failed to update product');
+    }
+    setEditingCell(null);
+  };
+
+  const columns = [
+    {
+      header: 'Select',
+      cell: (row: Product) => (
+        <input
+          type="checkbox"
+          checked={selectedProducts.includes(row.id)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedProducts([...selectedProducts, row.id]);
+            } else {
+              setSelectedProducts(selectedProducts.filter((id) => id !== row.id));
+            }
+          }}
+        />
+      ),
+    },
+    {
+      key: 'name',
+      header: 'Product Name',
+      sortable: true,
+      render: (product: Product) => (
+        <div className="flex items-center space-x-3">
+          <img
+            src={product.images[0] || '/placeholder.png'}
+            alt={product.name}
+            className="w-10 h-10 rounded object-cover"
+          />
+          <span>{product.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'sku',
+      header: 'SKU',
+      sortable: true,
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      sortable: true,
+    },
+    {
+      key: 'regularPrice',
+      header: 'Price',
+      sortable: true,
+      render: (product: Product) => (
+        <div>
+          {editingCell?.id === product.id && editingCell?.field === 'price' ? (
+            <input
+              type="number"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={() => handleQuickEdit(product.id, 'regularPrice', editValue)}
+              autoFocus
+            />
+          ) : (
+            <span onClick={() => { setEditingCell({ id: product.id, field: 'price' }); setEditValue(product.regularPrice.toFixed(2)); }}>
+              ${product.regularPrice.toFixed(2)}
+            </span>
+          )}
+          {product.salePrice && (
+            <span className="ml-2 text-status-red">
+              ${product.salePrice.toFixed(2)}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'stock',
+      header: 'Stock',
+      sortable: true,
+      render: (product: Product) => (
+        <span
+          className={
+            product.stock <= product.lowStockThreshold
+              ? 'text-status-red'
+              : ''
+          }
+        >
+          {product.stock}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      render: (product: Product) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            statusColors[product.status]
+          }`}
+        >
+          {editingCell?.id === product.id && editingCell?.field === 'status' ? (
+            <select
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={() => handleQuickEdit(product.id, 'status', editValue)}
+              autoFocus
+            >
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
+          ) : (
+            <span onClick={() => { setEditingCell({ id: product.id, field: 'status' }); setEditValue(product.status); }}>
+              {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
+            </span>
+          )}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-serif text-brown-darkest">Products</h1>
+          <button
+            onClick={() => navigate('/products/new')}
+            className="vintage-button flex items-center space-x-2"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Add Product</span>
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="vintage-card">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <MagnifyingGlassIcon className="w-5 h-5 text-brown-light absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={filters.search}
+                onChange={handleFilterChange}
+                name="search"
+                className="vintage-input pl-10 w-full"
+              />
+            </div>
+            <select
+              value={filters.category}
+              onChange={handleFilterChange}
+              name="category"
+              className="vintage-select"
+            >
+              <option value="">All Categories</option>
+              <option value="T-Shirts">T-Shirts</option>
+              <option value="Hoodies">Hoodies</option>
+              <option value="Accessories">Accessories</option>
+            </select>
+            <select
+              value={filters.brand}
+              onChange={handleFilterChange}
+              name="brand"
+              className="vintage-select"
+            >
+              <option value="">All Brands</option>
+              <option value="brand1">Brand 1</option>
+              <option value="brand2">Brand 2</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Min Price"
+              value={filters.minPrice}
+              onChange={handleFilterChange}
+              name="minPrice"
+              className="vintage-input"
+            />
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={filters.maxPrice}
+              onChange={handleFilterChange}
+              name="maxPrice"
+              className="vintage-input"
+            />
+            <select
+              value={filters.stockStatus}
+              onChange={handleFilterChange}
+              name="stockStatus"
+              className="vintage-select"
+            >
+              <option value="">All Stock</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="vintage-card bg-status-red/10 border border-status-red text-status-red p-4">
+            {error}
+          </div>
+        )}
+
+        {/* Products Table */}
+        <DataTable
+          columns={columns}
+          data={products}
+          keyExtractor={(product) => product.id}
+          onRowClick={(product) => navigate(`/products/${product.id}/edit`)}
+          isLoading={isLoading}
+          emptyMessage="No products found"
+        />
+
+        <div className="flex justify-between mt-4">
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+
+        <div className="flex space-x-4 mt-6">
+          <button
+            onClick={() => handleBulkAction('delete')}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Delete Selected
+          </button>
+          <button
+            onClick={() => handleBulkAction('updateStatus')}
+            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+          >
+            Update Status
+          </button>
+          <button
+            onClick={() => handleBulkAction('updatePrice')}
+            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+          >
+            Update Price
+          </button>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default ProductList; 
