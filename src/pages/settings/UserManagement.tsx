@@ -7,8 +7,20 @@ import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
+import { format } from 'date-fns';
 
 const ITEMS_PER_PAGE = 10;
+
+interface UserResponse {
+  users: AdminUser[];
+  total: number;
+}
+
+interface SelectEvent {
+  target: {
+    value: string;
+  };
+}
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -41,14 +53,10 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await settingsService.getAdminUsers({
-        ...filters,
-        page: currentPage,
-        limit: ITEMS_PER_PAGE
-      });
-      setUsers(data.users);
-      setTotalPages(Math.ceil(data.total / ITEMS_PER_PAGE));
-      setTotalUsers(data.total);
+      const data = await settingsService.getAdminUsers();
+      setUsers(data);
+      setTotalPages(Math.ceil(data.length / ITEMS_PER_PAGE));
+      setTotalUsers(data.length);
       setError(null);
     } catch (err) {
       setError('Failed to fetch users');
@@ -67,9 +75,10 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
-    setCurrentPage(1); // Reset to first page when filters change
+  const handleFilterChange = (field: string, value: string | SelectEvent) => {
+    const actualValue = typeof value === 'string' ? value : value.target.value;
+    setFilters(prev => ({ ...prev, [field]: actualValue }));
+    setCurrentPage(1);
   };
 
   const handleUserSave = async (userData: Partial<AdminUser>) => {
@@ -245,18 +254,18 @@ const UserManagement: React.FC = () => {
           <Select
             label="Role"
             value={filters.role}
-            onChange={(e) => handleFilterChange('role', e.target.value)}
+            onChange={(value: string | SelectEvent) => handleFilterChange('role', value)}
             options={[
               { value: '', label: 'All Roles' },
-              { value: 'admin', label: 'Administrator' },
+              { value: 'super_admin', label: 'Super Admin' },
               { value: 'manager', label: 'Manager' },
-              { value: 'editor', label: 'Editor' }
+              { value: 'staff', label: 'Staff' }
             ]}
           />
           <Select
             label="Status"
             value={filters.status}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
+            onChange={(value: string | SelectEvent) => handleFilterChange('status', value)}
             options={[
               { value: '', label: 'All Status' },
               { value: 'active', label: 'Active' },
@@ -268,106 +277,103 @@ const UserManagement: React.FC = () => {
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  2FA
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <img
-                          className="h-10 w-10 rounded-full"
-                          src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
-                          alt=""
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {user.email}
-                        </div>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                User
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Role
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Login
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                2FA
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500 font-medium">
+                          {user.name.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => handleToggle2FA(user.id, !user.twoFactorEnabled)}
-                      disabled={isSubmitting}
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.twoFactorEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(user.lastLogin).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setShowUserModal(true);
-                      }}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      disabled={isSubmitting}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleUserDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
-                      disabled={isSubmitting}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    user.role === 'super_admin'
+                      ? 'bg-purple-100 text-purple-800'
+                      : user.role === 'manager'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    user.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.lastLogin ? format(new Date(user.lastLogin), 'MMM d, yyyy HH:mm') : 'Never'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => handleToggle2FA(user.id, !user.twoFactorEnabled)}
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      user.twoFactorEnabled
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                  </button>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setShowUserModal(true);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleUserDelete(user.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         {renderPagination()}
       </div>
 
@@ -377,134 +383,124 @@ const UserManagement: React.FC = () => {
         onClose={() => setShowUserModal(false)}
         title={selectedUser ? 'Edit User' : 'Add User'}
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleUserSave({
-            name: formData.get('name') as string,
-            email: formData.get('email') as string,
-            role: formData.get('role') as string,
-            status: formData.get('status') as string,
-            permissions: formData.getAll('permissions') as string[]
-          });
-        }}>
-          <div className="space-y-4">
-            <Input
-              label="Name"
-              name="name"
-              defaultValue={selectedUser?.name}
-              required
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            handleUserSave({
+              name: formData.get('name') as string,
+              email: formData.get('email') as string,
+              role: formData.get('role') as 'super_admin' | 'manager' | 'staff',
+              status: formData.get('status') as 'active' | 'inactive'
+            });
+          }}
+          className="space-y-4"
+        >
+          <Input
+            label="Name"
+            name="name"
+            defaultValue={selectedUser?.name}
+            required
+          />
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            defaultValue={selectedUser?.email}
+            required
+          />
+          <Select
+            label="Role"
+            name="role"
+            defaultValue={selectedUser?.role}
+            onChange={(value: string | SelectEvent) => {
+              const actualValue = typeof value === 'string' ? value : value.target.value;
+              const form = document.querySelector('form');
+              if (form) {
+                const roleInput = form.querySelector('input[name="role"]');
+                if (roleInput) {
+                  (roleInput as HTMLInputElement).value = actualValue;
+                }
+              }
+            }}
+            options={[
+              { value: 'super_admin', label: 'Super Admin' },
+              { value: 'manager', label: 'Manager' },
+              { value: 'staff', label: 'Staff' }
+            ]}
+            required
+          />
+          <Select
+            label="Status"
+            name="status"
+            defaultValue={selectedUser?.status}
+            onChange={(value: string | SelectEvent) => {
+              const actualValue = typeof value === 'string' ? value : value.target.value;
+              const form = document.querySelector('form');
+              if (form) {
+                const statusInput = form.querySelector('input[name="status"]');
+                if (statusInput) {
+                  (statusInput as HTMLInputElement).value = actualValue;
+                }
+              }
+            }}
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' }
+            ]}
+            required
+          />
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowUserModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
               disabled={isSubmitting}
-            />
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              defaultValue={selectedUser?.email}
-              required
-              disabled={isSubmitting}
-            />
-            <Select
-              label="Role"
-              name="role"
-              defaultValue={selectedUser?.role}
-              required
-              disabled={isSubmitting}
-              options={[
-                { value: 'admin', label: 'Administrator' },
-                { value: 'manager', label: 'Manager' },
-                { value: 'editor', label: 'Editor' }
-              ]}
-            />
-            <Select
-              label="Status"
-              name="status"
-              defaultValue={selectedUser?.status}
-              required
-              disabled={isSubmitting}
-              options={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' }
-              ]}
-            />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Permissions
-              </label>
-              <div className="space-y-2">
-                {['products', 'orders', 'customers', 'inventory', 'analytics', 'content', 'marketing', 'settings'].map(permission => (
-                  <label key={permission} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="permissions"
-                      value={permission}
-                      defaultChecked={selectedUser?.permissions.includes(permission)}
-                      disabled={isSubmitting}
-                      className="mr-2"
-                    />
-                    {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                  </label>
-                ))}
-              </div>
-            </div>
-            {!selectedUser && (
-              <Input
-                label="Password"
-                name="password"
-                type="password"
-                required
-                disabled={isSubmitting}
-              />
-            )}
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowUserModal(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : selectedUser ? 'Update' : 'Create'}
-              </Button>
-            </div>
+            >
+              {isSubmitting ? 'Saving...' : 'Save'}
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Activity Log Modal */}
+      {/* Activity Logs Modal */}
       <Modal
         isOpen={showActivityModal}
         onClose={() => setShowActivityModal(false)}
         title="Activity Logs"
-        size="lg"
       >
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-          {activityLogs.map(log => (
-            <div key={log.id} className="p-4 border rounded-lg">
+        <div className="space-y-4">
+          {activityLogs.map((log) => (
+            <div key={log.id} className="border-b border-gray-200 pb-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium">{log.action}</p>
-                  <p className="text-sm text-gray-600">
-                    {log.details}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(log.timestamp).toLocaleString()}
+                  <p className="font-medium">{log.userName}</p>
+                  <p className="text-sm text-gray-500">
+                    {log.action} {log.entity} {log.entityId}
                   </p>
                 </div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                  log.type === 'create' ? 'bg-green-100 text-green-800' :
-                  log.type === 'update' ? 'bg-blue-100 text-blue-800' :
-                  log.type === 'delete' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {log.type}
-                </span>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm')}
+                </p>
+              </div>
+              <div className="mt-2">
+                <p className="text-sm text-gray-600">
+                  IP: {log.ipAddress}
+                </p>
+                <p className="text-sm text-gray-600">
+                  User Agent: {log.userAgent}
+                </p>
+                {Object.entries(log.details).map(([key, value]) => (
+                  <p key={key} className="text-sm text-gray-600">
+                    {key}: {JSON.stringify(value)}
+                  </p>
+                ))}
               </div>
             </div>
           ))}

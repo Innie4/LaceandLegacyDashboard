@@ -7,7 +7,7 @@ import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
 
-const StoreSettings: React.FC = () => {
+const StoreSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,18 +35,23 @@ const StoreSettings: React.FC = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number | boolean) => {
     if (!settings) return;
 
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setSettings(prev => prev ? {
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value
-        }
-      } : null);
+      setSettings(prev => {
+        if (!prev) return null;
+        const parentObj = prev[parent as keyof typeof prev];
+        if (typeof parentObj !== 'object' || parentObj === null) return prev;
+        return {
+          ...prev,
+          [parent]: {
+            ...parentObj,
+            [child]: value
+          }
+        };
+      });
     } else {
       setSettings(prev => prev ? { ...prev, [field]: value } : null);
     }
@@ -178,7 +183,7 @@ const StoreSettings: React.FC = () => {
             <Select
               label="Timezone"
               value={settings.timezone}
-              onChange={(e) => handleInputChange('timezone', e.target.value)}
+              onChange={(value) => handleInputChange('timezone', value)}
               options={[
                 { value: 'UTC', label: 'UTC' },
                 { value: 'EST', label: 'Eastern Time' },
@@ -241,7 +246,7 @@ const StoreSettings: React.FC = () => {
             <Select
               label="Symbol Position"
               value={settings.currency.position}
-              onChange={(e) => handleInputChange('currency.position', e.target.value)}
+              onChange={(value) => handleInputChange('currency.position', value)}
               options={[
                 { value: 'before', label: 'Before Amount' },
                 { value: 'after', label: 'After Amount' }
@@ -432,4 +437,4 @@ const StoreSettings: React.FC = () => {
   );
 };
 
-export default StoreSettings; 
+export default StoreSettingsPage; 

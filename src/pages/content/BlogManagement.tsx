@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import contentService, { BlogPost, ContentFilters } from '../../services/contentService';
+import contentService, { ContentFilters, BlogPost, Category, Tag } from '../../services/contentService';
 import Layout from '../../components/common/Layout';
 
 const BlogManagement: React.FC = () => {
@@ -13,21 +13,20 @@ const BlogManagement: React.FC = () => {
   const [filters, setFilters] = useState<ContentFilters>({});
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Partial<BlogPost>>({
     title: '',
     content: '',
     excerpt: '',
-    status: 'draft' as const,
-    publishedAt: '',
-    categories: [] as string[],
-    tags: [] as string[],
+    status: 'draft',
+    categories: [],
+    tags: [],
     featuredImage: '',
     seo: {
       title: '',
       description: '',
       keywords: '',
-      ogImage: '',
-    },
+      ogImage: ''
+    }
   });
 
   useEffect(() => {
@@ -59,10 +58,13 @@ const BlogManagement: React.FC = () => {
       excerpt: post.excerpt,
       status: post.status,
       publishedAt: post.publishedAt || '',
-      categories: post.categories.map((cat) => cat.id),
-      tags: post.tags.map((tag) => tag.id),
+      categories: post.categories,
+      tags: post.tags,
       featuredImage: post.featuredImage || '',
-      seo: post.seo,
+      seo: {
+        ...post.seo,
+        ogImage: post.seo.ogImage || ''
+      },
     });
     setIsEditing(true);
   };
@@ -93,7 +95,6 @@ const BlogManagement: React.FC = () => {
         content: '',
         excerpt: '',
         status: 'draft',
-        publishedAt: '',
         categories: [],
         tags: [],
         featuredImage: '',
@@ -101,8 +102,8 @@ const BlogManagement: React.FC = () => {
           title: '',
           description: '',
           keywords: '',
-          ogImage: '',
-        },
+          ogImage: ''
+        }
       });
       fetchPosts();
     } catch (err) {
@@ -121,12 +122,38 @@ const BlogManagement: React.FC = () => {
 
   const handleSEOAnalysis = async () => {
     try {
+      if (!form.content) return;
       const analysis = await contentService.analyzeSEO(form.content);
       // Handle SEO analysis results
       console.log(analysis);
     } catch (err) {
-      setError('Failed to analyze SEO');
+      console.error('SEO analysis failed:', err);
     }
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setForm(prev => ({
+      ...prev,
+      status: e.target.value as 'draft' | 'published' | 'scheduled'
+    }));
+  };
+
+  const handleCategoryChange = (categoryIds: string[]) => {
+    const categories = categoryIds.map(id => ({
+      id,
+      name: '', // This will be populated when the post is loaded
+      slug: '' // This will be populated when the post is loaded
+    })) as Category[];
+    setForm(prev => ({ ...prev, categories }));
+  };
+
+  const handleTagChange = (tagIds: string[]) => {
+    const tags = tagIds.map(id => ({
+      id,
+      name: '', // This will be populated when the post is loaded
+      slug: '' // This will be populated when the post is loaded
+    })) as Tag[];
+    setForm(prev => ({ ...prev, tags }));
   };
 
   if (loading) {
@@ -190,9 +217,7 @@ const BlogManagement: React.FC = () => {
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
                   value={form.status}
-                  onChange={(e) =>
-                    setForm({ ...form, status: e.target.value as 'draft' | 'published' | 'scheduled' })
-                  }
+                  onChange={handleStatusChange}
                   className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
                 >
                   <option value="draft">Draft</option>
@@ -237,9 +262,9 @@ const BlogManagement: React.FC = () => {
                     <label className="block text-sm font-medium mb-1">SEO Title</label>
                     <input
                       type="text"
-                      value={form.seo.title}
+                      value={form.seo?.title || ''}
                       onChange={(e) =>
-                        setForm({ ...form, seo: { ...form.seo, title: e.target.value } })
+                        setForm({ ...form, seo: { ...form.seo!, title: e.target.value } })
                       }
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
                     />
@@ -247,9 +272,9 @@ const BlogManagement: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Meta Description</label>
                     <textarea
-                      value={form.seo.description}
+                      value={form.seo?.description || ''}
                       onChange={(e) =>
-                        setForm({ ...form, seo: { ...form.seo, description: e.target.value } })
+                        setForm({ ...form, seo: { ...form.seo!, description: e.target.value } })
                       }
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
                     />
@@ -258,9 +283,9 @@ const BlogManagement: React.FC = () => {
                     <label className="block text-sm font-medium mb-1">Keywords</label>
                     <input
                       type="text"
-                      value={form.seo.keywords}
+                      value={form.seo?.keywords || ''}
                       onChange={(e) =>
-                        setForm({ ...form, seo: { ...form.seo, keywords: e.target.value } })
+                        setForm({ ...form, seo: { ...form.seo!, keywords: e.target.value } })
                       }
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
                     />

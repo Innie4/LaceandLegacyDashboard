@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { DataTable, Column } from '../../components/common/DataTable';
 import marketingService, { Promotion } from '../../services/marketingService';
-import { DataTable } from '../../components/common/DataTable';
+import Layout from '../../components/common/Layout';
+import { PlusIcon, PencilIcon, TrashIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
 
+interface SelectEvent {
+  target: {
+    value: string;
+  };
+}
+
 const Promotions: React.FC = () => {
+  const navigate = useNavigate();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,10 +27,15 @@ const Promotions: React.FC = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [filters, setFilters] = useState<{
+    status?: Promotion['status'];
+    type?: Promotion['type'];
+    search?: string;
+  }>({});
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<Promotion>>({
     code: '',
-    type: 'percentage' as 'percentage' | 'fixed',
+    type: 'percentage',
     value: 0,
     minPurchase: 0,
     maxDiscount: 0,
@@ -28,15 +43,15 @@ const Promotions: React.FC = () => {
     endDate: '',
     usageLimit: 0,
     restrictions: {
-      categories: [] as string[],
-      products: [] as string[],
-      customerGroups: [] as string[]
+      categories: [],
+      products: [],
+      customerGroups: []
     }
   });
 
   useEffect(() => {
     fetchPromotions();
-  }, []);
+  }, [filters]);
 
   const fetchPromotions = async () => {
     try {
@@ -46,25 +61,19 @@ const Promotions: React.FC = () => {
       setError(null);
     } catch (err) {
       setError('Failed to fetch promotions');
-      toast.error('Failed to fetch promotions');
+      console.error('Error fetching promotions:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+  const handleFilterChange = (field: string, value: string | { target: { value: string } }) => {
+    const actualValue = typeof value === 'string' ? value : value.target.value;
+    setFilters(prev => ({ ...prev, [field]: actualValue }));
+  };
+
+  const handleInputChange = (field: keyof Promotion, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleGenerateCode = async () => {
@@ -122,78 +131,83 @@ const Promotions: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: Column<Promotion>[] = [
     {
-      Header: 'Code',
-      accessor: 'code',
-      Cell: ({ row }: any) => (
-        <div className="font-mono">{row.original.code}</div>
+      key: 'code',
+      header: 'Code',
+      sortable: true,
+      render: (item: Promotion) => (
+        <div className="font-mono">{item.code}</div>
       )
     },
     {
-      Header: 'Type',
-      accessor: 'type',
-      Cell: ({ row }: any) => (
+      key: 'type',
+      header: 'Type',
+      sortable: true,
+      render: (item: Promotion) => (
         <span className="capitalize">
-          {row.original.type === 'percentage' ? `${row.original.value}%` : `$${row.original.value}`}
+          {item.type === 'percentage' ? `${item.value}%` : `$${item.value}`}
         </span>
       )
     },
     {
-      Header: 'Validity',
-      accessor: 'validity',
-      Cell: ({ row }: any) => (
+      key: 'validity',
+      header: 'Validity',
+      sortable: true,
+      render: (item: Promotion) => (
         <div className="text-sm">
-          <div>From: {new Date(row.original.startDate).toLocaleDateString()}</div>
-          <div>To: {new Date(row.original.endDate).toLocaleDateString()}</div>
+          <div>From: {format(new Date(item.startDate), 'MMM d, yyyy')}</div>
+          <div>To: {format(new Date(item.endDate), 'MMM d, yyyy')}</div>
         </div>
       )
     },
     {
-      Header: 'Usage',
-      accessor: 'usage',
-      Cell: ({ row }: any) => (
+      key: 'usage',
+      header: 'Usage',
+      sortable: true,
+      render: (item: Promotion) => (
         <div className="text-sm">
-          <div>{row.original.usageCount} / {row.original.usageLimit || '∞'}</div>
+          <div>{item.usageCount} / {item.usageLimit || '∞'}</div>
         </div>
       )
     },
     {
-      Header: 'Status',
-      accessor: 'status',
-      Cell: ({ row }: any) => (
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      render: (item: Promotion) => (
         <span className={`px-2 py-1 text-xs rounded ${
-          row.original.status === 'active' ? 'bg-green-100 text-green-800' :
-          row.original.status === 'expired' ? 'bg-red-100 text-red-800' :
+          item.status === 'active' ? 'bg-green-100 text-green-800' :
+          item.status === 'expired' ? 'bg-red-100 text-red-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1)}
+          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         </span>
       )
     },
     {
-      Header: 'Actions',
-      accessor: 'actions',
-      Cell: ({ row }: any) => (
+      key: 'actions',
+      header: 'Actions',
+      sortable: false,
+      render: (item: Promotion) => (
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => handleViewStats(row.original)}
+            onClick={() => handleViewStats(item)}
             className="p-1 text-gray-600 hover:text-gray-900"
           >
             <ChartBarIcon className="w-5 h-5" />
           </button>
           <button
             onClick={() => {
-              setSelectedPromotion(row.original);
-              setFormData(row.original);
-              setShowEditModal(true);
+              setSelectedPromotion(item);
+              setFormData(item);
             }}
             className="p-1 text-gray-600 hover:text-gray-900"
           >
             <PencilIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={() => handleDeletePromotion(row.original)}
+            onClick={() => handleDeletePromotion(item)}
             className="p-1 text-red-600 hover:text-red-900"
           >
             <TrashIcon className="w-5 h-5" />
@@ -204,174 +218,197 @@ const Promotions: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-900">Promotions</h1>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setFormData({
-              code: '',
-              type: 'percentage',
-              value: 0,
-              minPurchase: 0,
-              maxDiscount: 0,
-              startDate: '',
-              endDate: '',
-              usageLimit: 0,
-              restrictions: {
-                categories: [],
-                products: [],
-                customerGroups: []
-              }
-            });
-            setShowCreateModal(true);
-          }}
-        >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          New Promotion
-        </Button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow">
-        <DataTable
-          columns={columns}
-          data={promotions}
-          loading={loading}
-        />
-      </div>
-
-      {/* Create/Edit Modal */}
-      <Modal
-        isOpen={showCreateModal || showEditModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setShowEditModal(false);
-        }}
-        title={showCreateModal ? 'Create Promotion' : 'Edit Promotion'}
-      >
-        <div className="space-y-4">
-          <div className="flex space-x-2">
-            <Input
-              label="Promo Code"
-              value={formData.code}
-              onChange={(e) => handleInputChange('code', e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              variant="secondary"
-              onClick={handleGenerateCode}
-              className="mt-6"
-            >
-              Generate
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Discount Type"
-              value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value)}
-              options={[
-                { value: 'percentage', label: 'Percentage' },
-                { value: 'fixed', label: 'Fixed Amount' }
-              ]}
-            />
-            <Input
-              label="Value"
-              type="number"
-              value={formData.value}
-              onChange={(e) => handleInputChange('value', parseFloat(e.target.value))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Minimum Purchase"
-              type="number"
-              value={formData.minPurchase}
-              onChange={(e) => handleInputChange('minPurchase', parseFloat(e.target.value))}
-            />
-            <Input
-              label="Maximum Discount"
-              type="number"
-              value={formData.maxDiscount}
-              onChange={(e) => handleInputChange('maxDiscount', parseFloat(e.target.value))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Start Date"
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-            />
-            <Input
-              label="End Date"
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => handleInputChange('endDate', e.target.value)}
-            />
-          </div>
-
-          <Input
-            label="Usage Limit"
-            type="number"
-            value={formData.usageLimit}
-            onChange={(e) => handleInputChange('usageLimit', parseInt(e.target.value))}
-          />
-
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowCreateModal(false);
-                setShowEditModal(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={showCreateModal ? handleCreatePromotion : handleEditPromotion}
-            >
-              {showCreateModal ? 'Create' : 'Save'}
-            </Button>
-          </div>
+    <Layout>
+      <div className="max-w-7xl mx-auto py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Promotions</h1>
+          <button
+            onClick={() => navigate('/marketing/promotions/new')}
+            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+          >
+            New Promotion
+          </button>
         </div>
-      </Modal>
 
-      {/* Stats Modal */}
-      <Modal
-        isOpen={showStatsModal}
-        onClose={() => setShowStatsModal(false)}
-        title={`Promotion Stats - ${selectedPromotion?.code}`}
-      >
-        {stats && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500">Total Usage</h3>
-                <p className="text-2xl font-semibold">{stats.totalUsage}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500">Total Discount</h3>
-                <p className="text-2xl font-semibold">${stats.totalDiscount.toFixed(2)}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500">Average Order Value</h3>
-                <p className="text-2xl font-semibold">${stats.averageOrderValue.toFixed(2)}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500">Conversion Rate</h3>
-                <p className="text-2xl font-semibold">{(stats.conversionRate * 100).toFixed(1)}%</p>
-              </div>
+        {error && <div className="text-red-600 mb-4">{error}</div>}
+
+        <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Search"
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                placeholder="Search promotions"
+              />
+              <Select
+                label="Status"
+                value={filters.status}
+                onChange={(value: string | SelectEvent) => handleFilterChange('status', value)}
+                options={[
+                  { value: '', label: 'All Status' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'scheduled', label: 'Scheduled' },
+                  { value: 'expired', label: 'Expired' }
+                ]}
+              />
+              <Select
+                label="Type"
+                value={filters.type}
+                onChange={(value: string | SelectEvent) => handleFilterChange('type', value)}
+                options={[
+                  { value: '', label: 'All Types' },
+                  { value: 'percentage', label: 'Percentage' },
+                  { value: 'fixed', label: 'Fixed Amount' },
+                  { value: 'free_shipping', label: 'Free Shipping' }
+                ]}
+              />
             </div>
           </div>
-        )}
-      </Modal>
-    </div>
+
+          <div className="bg-white rounded-lg shadow">
+            <DataTable<Promotion>
+              columns={columns}
+              data={promotions}
+              keyExtractor={(item) => item.id}
+              isLoading={loading}
+            />
+          </div>
+
+          {/* Create/Edit Modal */}
+          <Modal
+            isOpen={showCreateModal || showEditModal}
+            onClose={() => {
+              setShowCreateModal(false);
+              setShowEditModal(false);
+            }}
+            title={showCreateModal ? 'Create Promotion' : 'Edit Promotion'}
+          >
+            <div className="space-y-4">
+              <div className="flex space-x-2">
+                <Input
+                  label="Promo Code"
+                  value={formData.code}
+                  onChange={(e) => handleInputChange('code', e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  variant="secondary"
+                  onClick={handleGenerateCode}
+                  className="mt-6"
+                >
+                  Generate
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Discount Type"
+                  value={formData.type}
+                  onChange={(e) => handleInputChange('type', e.target.value)}
+                  options={[
+                    { value: 'percentage', label: 'Percentage' },
+                    { value: 'fixed', label: 'Fixed Amount' }
+                  ]}
+                />
+                <Input
+                  label="Value"
+                  type="number"
+                  value={formData.value}
+                  onChange={(e) => handleInputChange('value', parseFloat(e.target.value))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Minimum Purchase"
+                  type="number"
+                  value={formData.minPurchase}
+                  onChange={(e) => handleInputChange('minPurchase', parseFloat(e.target.value))}
+                />
+                <Input
+                  label="Maximum Discount"
+                  type="number"
+                  value={formData.maxDiscount}
+                  onChange={(e) => handleInputChange('maxDiscount', parseFloat(e.target.value))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Start Date"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleInputChange('startDate', e.target.value)}
+                />
+                <Input
+                  label="End Date"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => handleInputChange('endDate', e.target.value)}
+                />
+              </div>
+
+              <Input
+                label="Usage Limit"
+                type="number"
+                value={formData.usageLimit}
+                onChange={(e) => handleInputChange('usageLimit', parseInt(e.target.value))}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setShowEditModal(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={showCreateModal ? handleCreatePromotion : handleEditPromotion}
+                >
+                  {showCreateModal ? 'Create' : 'Save'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Stats Modal */}
+          <Modal
+            isOpen={showStatsModal}
+            onClose={() => setShowStatsModal(false)}
+            title={`Promotion Stats - ${selectedPromotion?.code}`}
+          >
+            {stats && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-500">Total Usage</h3>
+                    <p className="text-2xl font-semibold">{stats.totalUsage}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-500">Total Discount</h3>
+                    <p className="text-2xl font-semibold">${stats.totalDiscount.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-500">Average Order Value</h3>
+                    <p className="text-2xl font-semibold">${stats.averageOrderValue.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-500">Conversion Rate</h3>
+                    <p className="text-2xl font-semibold">{(stats.conversionRate * 100).toFixed(1)}%</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Modal>
+        </div>
+      </div>
+    </Layout>
   );
 };
 

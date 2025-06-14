@@ -83,9 +83,9 @@ const CategoryManager: React.FC = () => {
     e.preventDefault();
     try {
       if (editingCategory) {
-        await productService.updateCategory(editingCategory.id, form);
+        await productService.updateCategory(editingCategory.id, form.name);
       } else {
-        await productService.createCategory(form);
+        await productService.createCategory(form.name, form.parentId || undefined);
       }
       setEditingCategory(null);
       setForm({

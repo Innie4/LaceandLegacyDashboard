@@ -69,7 +69,7 @@ const SalesReports: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales-report-${format}-${format(new Date(), 'yyyy-MM-dd')}.${format}`;
+      a.download = `sales-report-${format}-${new Date().toISOString().split('T')[0]}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

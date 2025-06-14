@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { PlusIcon, EyeIcon, CodeIcon, DevicePhoneMobileIcon, DeviceTabletIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { PlusIcon, EyeIcon, QrCodeIcon, DevicePhoneMobileIcon, DeviceTabletIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import pageService, { Page } from '../../services/pageService';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -9,11 +9,32 @@ import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
 
-// Component types for the page builder
-interface Component {
+interface PageComponent {
   id: string;
   type: string;
   props: Record<string, any>;
+}
+
+interface PageContent {
+  components: PageComponent[];
+}
+
+interface FormData {
+  title: string;
+  slug: string;
+  status: 'draft' | 'published' | 'scheduled';
+  template: string;
+  seo: {
+    title: string;
+    description: string;
+    keywords: string[];
+  };
+}
+
+interface SelectEvent {
+  target: {
+    value: string;
+  };
 }
 
 interface PageEditorProps {
@@ -28,11 +49,10 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [showComponentModal, setShowComponentModal] = useState(false);
-  const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
+  const [selectedComponent, setSelectedComponent] = useState<PageComponent | null>(null);
   const [seoAnalysis, setSeoAnalysis] = useState<any>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     slug: '',
     status: 'draft',
@@ -40,7 +60,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
     seo: {
       title: '',
       description: '',
-      keywords: [] as string[]
+      keywords: []
     }
   });
 
@@ -71,39 +91,33 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const handleSelectChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-    const components = Array.from(page?.content.components || []);
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !page) return;
+
+    const components = Array.from(page.content.components);
     const [reorderedItem] = components.splice(result.source.index, 1);
     components.splice(result.destination.index, 0, reorderedItem);
 
-    setPage(prev => prev ? {
-      ...prev,
+    setPage({
+      ...page,
       content: {
-        ...prev.content,
+        ...page.content,
         components
       }
-    } : null);
+    });
   };
 
   const handleAddComponent = (type: string) => {
-    const newComponent: Component = {
+    const newComponent: PageComponent = {
       id: `component-${Date.now()}`,
       type,
       props: {}
@@ -120,16 +134,20 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
     setShowComponentModal(false);
   };
 
-  const handleComponentEdit = (componentId: string, props: Record<string, any>) => {
-    setPage(prev => prev ? {
-      ...prev,
-      content: {
-        ...prev.content,
-        components: prev.content.components.map(comp =>
-          comp.id === componentId ? { ...comp, props } : comp
-        )
-      }
-    } : null);
+  const handleUpdateComponent = (componentId: string, props: Record<string, any>) => {
+    if (!page) return;
+    setPage(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        content: {
+          ...prev.content,
+          components: prev.content.components.map((comp: PageComponent) =>
+            comp.id === componentId ? { ...comp, props } : comp
+          )
+        }
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -164,14 +182,17 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
 
   const handleAnalyzeSEO = async () => {
     try {
-      const analysis = await pageService.analyzeSEO(page?.content.components.map(c => c.props.text).join(' ') || '');
+      if (!page) return;
+      const analysis = await pageService.analyzeSEO(
+        page.content.components.map((c: PageComponent) => c.props.text).join(' ') || ''
+      );
       setSeoAnalysis(analysis);
     } catch (err) {
       toast.error('Failed to analyze SEO');
     }
   };
 
-  const renderComponent = (component: Component) => {
+  const renderComponent = (component: PageComponent) => {
     switch (component.type) {
       case 'heading':
         return (
@@ -212,21 +233,33 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
           <Input
             label="Page Title"
             value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
+            onChange={handleInputChange}
+            name="title"
           />
           <Input
             label="Slug"
             value={formData.slug}
-            onChange={(e) => handleInputChange('slug', e.target.value)}
+            onChange={handleInputChange}
+            name="slug"
           />
           <Select
             label="Status"
             value={formData.status}
-            onChange={(e) => handleInputChange('status', e.target.value)}
+            onChange={(value) => handleSelectChange('status', value)}
             options={[
               { value: 'draft', label: 'Draft' },
               { value: 'published', label: 'Published' },
               { value: 'scheduled', label: 'Scheduled' }
+            ]}
+          />
+          <Select
+            label="Template"
+            value={formData.template}
+            onChange={(value) => handleSelectChange('template', value)}
+            options={[
+              { value: 'default', label: 'Default' },
+              { value: 'landing', label: 'Landing Page' },
+              { value: 'blog', label: 'Blog Post' }
             ]}
           />
           <div className="space-y-2">
@@ -234,12 +267,14 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
             <Input
               label="Meta Title"
               value={formData.seo.title}
-              onChange={(e) => handleInputChange('seo.title', e.target.value)}
+              onChange={handleInputChange}
+              name="seo.title"
             />
             <Input
               label="Meta Description"
               value={formData.seo.description}
-              onChange={(e) => handleInputChange('seo.description', e.target.value)}
+              onChange={handleInputChange}
+              name="seo.description"
             />
           </div>
           <Button
@@ -278,7 +313,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
                 variant="secondary"
                 onClick={handleAnalyzeSEO}
               >
-                <CodeIcon className="w-5 h-5 mr-2" />
+                <QrCodeIcon className="w-5 h-5 mr-2" />
                 Analyze SEO
               </Button>
             </div>
@@ -320,7 +355,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
                     ref={provided.innerRef}
                     className="space-y-4"
                   >
-                    {page?.content.components.map((component, index) => (
+                    {page?.content.components.map((component: PageComponent, index: number) => (
                       <Draggable
                         key={component.id}
                         draggableId={component.id}
@@ -399,7 +434,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
                 key={key}
                 label={key.charAt(0).toUpperCase() + key.slice(1)}
                 value={value as string}
-                onChange={(e) => handleComponentEdit(selectedComponent.id, {
+                onChange={(e) => handleUpdateComponent(selectedComponent.id, {
                   ...selectedComponent.props,
                   [key]: e.target.value
                 })}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
-import { DataTable } from '../../components/common/DataTable';
+import { DataTable, Column } from '../../components/common/DataTable';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { productService, Product, ProductFilters } from '../../services/productService';
 
@@ -20,10 +20,10 @@ const ProductList: React.FC = () => {
   const [filters, setFilters] = useState<ProductFilters>({
     search: '',
     category: '',
-    brand: '',
-    minPrice: '',
-    maxPrice: '',
-    stockStatus: '',
+    status: '',
+    minPrice: 0,
+    maxPrice: 0,
+    inStock: undefined
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -38,11 +38,7 @@ const ProductList: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await productService.getProducts({
-        ...filters,
-        page: currentPage,
-        limit: 10,
-      });
+      const result = await productService.getProducts(filters);
       setProducts(result.data);
       setTotalPages(result.totalPages);
     } catch (err) {
@@ -53,7 +49,11 @@ const ProductList: React.FC = () => {
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: name === 'minPrice' || name === 'maxPrice' ? Number(value) : value
+    }));
     setCurrentPage(1);
   };
 
@@ -70,7 +70,7 @@ const ProductList: React.FC = () => {
         case 'updatePrice':
           const newPrice = prompt('Enter new price:');
           if (newPrice) {
-            await productService.bulkUpdateProducts(selectedProducts, { price: parseFloat(newPrice) });
+            await productService.bulkUpdateProducts(selectedProducts, { regularPrice: parseFloat(newPrice) });
           }
           break;
       }
@@ -91,22 +91,24 @@ const ProductList: React.FC = () => {
     setEditingCell(null);
   };
 
-  const columns = [
+  const columns: Column<Product>[] = [
     {
+      key: 'select',
       header: 'Select',
-      cell: (row: Product) => (
+      sortable: false,
+      render: (product: Product) => (
         <input
           type="checkbox"
-          checked={selectedProducts.includes(row.id)}
+          checked={selectedProducts.includes(product.id)}
           onChange={(e) => {
             if (e.target.checked) {
-              setSelectedProducts([...selectedProducts, row.id]);
+              setSelectedProducts([...selectedProducts, product.id]);
             } else {
-              setSelectedProducts(selectedProducts.filter((id) => id !== row.id));
+              setSelectedProducts(selectedProducts.filter((id) => id !== product.id));
             }
           }}
         />
-      ),
+      )
     },
     {
       key: 'name',
@@ -121,17 +123,19 @@ const ProductList: React.FC = () => {
           />
           <span>{product.name}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'sku',
       header: 'SKU',
       sortable: true,
+      render: (product: Product) => product.sku
     },
     {
       key: 'category',
       header: 'Category',
       sortable: true,
+      render: (product: Product) => product.category
     },
     {
       key: 'regularPrice',
@@ -158,7 +162,7 @@ const ProductList: React.FC = () => {
             </span>
           )}
         </div>
-      ),
+      )
     },
     {
       key: 'stock',
@@ -174,7 +178,7 @@ const ProductList: React.FC = () => {
         >
           {product.stock}
         </span>
-      ),
+      )
     },
     {
       key: 'status',
@@ -203,8 +207,8 @@ const ProductList: React.FC = () => {
             </span>
           )}
         </span>
-      ),
-    },
+      )
+    }
   ];
 
   return (
@@ -247,99 +251,28 @@ const ProductList: React.FC = () => {
               <option value="Accessories">Accessories</option>
             </select>
             <select
-              value={filters.brand}
+              value={filters.status}
               onChange={handleFilterChange}
-              name="brand"
+              name="status"
               className="vintage-select"
             >
-              <option value="">All Brands</option>
-              <option value="brand1">Brand 1</option>
-              <option value="brand2">Brand 2</option>
-            </select>
-            <input
-              type="number"
-              placeholder="Min Price"
-              value={filters.minPrice}
-              onChange={handleFilterChange}
-              name="minPrice"
-              className="vintage-input"
-            />
-            <input
-              type="number"
-              placeholder="Max Price"
-              value={filters.maxPrice}
-              onChange={handleFilterChange}
-              name="maxPrice"
-              className="vintage-input"
-            />
-            <select
-              value={filters.stockStatus}
-              onChange={handleFilterChange}
-              name="stockStatus"
-              className="vintage-select"
-            >
-              <option value="">All Stock</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="vintage-card bg-status-red/10 border border-status-red text-status-red p-4">
-            {error}
-          </div>
-        )}
+        {error && <div className="text-red-600">{error}</div>}
 
-        {/* Products Table */}
-        <DataTable
-          columns={columns}
-          data={products}
-          keyExtractor={(product) => product.id}
-          onRowClick={(product) => navigate(`/products/${product.id}/edit`)}
-          isLoading={isLoading}
-          emptyMessage="No products found"
-        />
-
-        <div className="flex justify-between mt-4">
-          <button
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>Page {currentPage} of {totalPages}</span>
-          <button
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700 disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-
-        <div className="flex space-x-4 mt-6">
-          <button
-            onClick={() => handleBulkAction('delete')}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Delete Selected
-          </button>
-          <button
-            onClick={() => handleBulkAction('updateStatus')}
-            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
-          >
-            Update Status
-          </button>
-          <button
-            onClick={() => handleBulkAction('updatePrice')}
-            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
-          >
-            Update Price
-          </button>
+        <div className="vintage-card">
+          <DataTable<Product>
+            columns={columns}
+            data={products}
+            keyExtractor={(item) => item.id}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </Layout>

@@ -10,7 +10,7 @@ import {
   ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import Layout from '../../components/common/Layout';
-import { DataTable } from '../../components/common/DataTable';
+import { DataTable, Column } from '../../components/common/DataTable';
 import { inventoryService, StockAlert, StockMovement } from '../../services/inventoryService';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -96,105 +96,128 @@ const StockOverview: React.FC = () => {
     }
   };
 
-  const stockAlertColumns = [
+  const stockAlertColumns: Column<StockAlert>[] = [
     {
+      key: 'productName',
       header: 'Product',
-      accessor: 'productName',
+      sortable: true,
+      render: (item: StockAlert) => item.productName
     },
     {
+      key: 'currentStock',
       header: 'Current Stock',
-      accessor: 'currentStock',
-      cell: (value: number) => (
-        <span className="font-medium">{value}</span>
-      ),
+      sortable: true,
+      render: (item: StockAlert) => (
+        <span className="font-medium">{item.currentStock}</span>
+      )
     },
     {
+      key: 'lowStockThreshold',
       header: 'Low Stock Threshold',
-      accessor: 'lowStockThreshold',
+      sortable: true,
+      render: (item: StockAlert) => item.lowStockThreshold
     },
     {
+      key: 'reorderPoint',
       header: 'Reorder Point',
-      accessor: 'reorderPoint',
+      sortable: true,
+      render: (item: StockAlert) => item.reorderPoint
     },
     {
+      key: 'suggestedOrderQuantity',
       header: 'Suggested Order',
-      accessor: 'suggestedOrderQuantity',
+      sortable: true,
+      render: (item: StockAlert) => item.suggestedOrderQuantity
     },
     {
+      key: 'lastRestockDate',
       header: 'Last Restock',
-      accessor: 'lastRestockDate',
-      cell: (value: string) => (
-        <span>{value ? new Date(value).toLocaleDateString() : 'Never'}</span>
-      ),
+      sortable: true,
+      render: (item: StockAlert) => (
+        <span>{item.lastRestockDate ? new Date(item.lastRestockDate).toLocaleDateString() : 'Never'}</span>
+      )
     },
     {
+      key: 'productId',
       header: 'Actions',
-      cell: (row: StockAlert) => (
+      sortable: false,
+      render: (item: StockAlert) => (
         <button
-          onClick={() => navigate(`/products/${row.productId}/edit`)}
+          onClick={() => navigate(`/products/${item.productId}/edit`)}
           className="text-vintage-600 hover:text-vintage-700"
         >
           View Product
         </button>
-      ),
-    },
+      )
+    }
   ];
 
-  const stockMovementColumns = [
+  const stockMovementColumns: Column<StockMovement>[] = [
     {
+      key: 'createdAt',
       header: 'Date',
-      accessor: 'createdAt',
-      cell: (value: string) => (
-        <span>{new Date(value).toLocaleString()}</span>
-      ),
+      sortable: true,
+      render: (item: StockMovement) => (
+        <span>{new Date(item.createdAt).toLocaleString()}</span>
+      )
     },
     {
+      key: 'productName',
       header: 'Product',
-      accessor: 'productName',
+      sortable: true,
+      render: (item: StockMovement) => item.productName
     },
     {
+      key: 'type',
       header: 'Type',
-      accessor: 'type',
-      cell: (value: string) => (
+      sortable: true,
+      render: (item: StockMovement) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            value === 'in'
+            item.type === 'in'
               ? 'bg-green-100 text-green-800'
-              : value === 'out'
+              : item.type === 'out'
               ? 'bg-red-100 text-red-800'
               : 'bg-yellow-100 text-yellow-800'
           }`}
         >
-          {value.charAt(0).toUpperCase() + value.slice(1)}
+          {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
         </span>
-      ),
+      )
     },
     {
+      key: 'quantity',
       header: 'Quantity',
-      accessor: 'quantity',
-      cell: (value: number, row: StockMovement) => (
+      sortable: true,
+      render: (item: StockMovement) => (
         <span
           className={`font-medium ${
-            row.type === 'in' ? 'text-green-600' : 'text-red-600'
+            item.type === 'in' ? 'text-green-600' : 'text-red-600'
           }`}
         >
-          {row.type === 'in' ? '+' : '-'}
-          {Math.abs(value)}
+          {item.type === 'in' ? '+' : '-'}
+          {Math.abs(item.quantity)}
         </span>
-      ),
+      )
     },
     {
+      key: 'reason',
       header: 'Reason',
-      accessor: 'reason',
+      sortable: true,
+      render: (item: StockMovement) => item.reason
     },
     {
+      key: 'reference',
       header: 'Reference',
-      accessor: 'reference',
+      sortable: true,
+      render: (item: StockMovement) => item.reference
     },
     {
+      key: 'notes',
       header: 'Notes',
-      accessor: 'notes',
-    },
+      sortable: true,
+      render: (item: StockMovement) => item.notes
+    }
   ];
 
   return (
@@ -241,61 +264,29 @@ const StockOverview: React.FC = () => {
           </select>
         </div>
 
-        {/* Low Stock Alerts */}
+        {/* Stock Alerts */}
         <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 mr-2" />
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Low Stock Alerts
-              </h3>
-            </div>
-          </div>
           <div className="px-4 py-5 sm:p-6">
-            {loading ? (
-              <div className="text-center py-4">Loading...</div>
-            ) : error ? (
-              <div className="text-center py-4 text-red-600">{error}</div>
-            ) : stockAlerts.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">
-                No low stock alerts
-              </div>
-            ) : (
-              <DataTable
-                columns={stockAlertColumns}
-                data={stockAlerts}
-                keyField="productId"
-              />
-            )}
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Low Stock Alerts</h2>
+            <DataTable<StockAlert>
+              columns={stockAlertColumns}
+              data={stockAlerts}
+              keyExtractor={(item) => item.productId}
+              isLoading={loading}
+            />
           </div>
         </div>
 
-        {/* Stock Movement History */}
+        {/* Stock Movements */}
         <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <ArrowPathIcon className="h-5 w-5 text-gray-400 mr-2" />
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Stock Movement History
-              </h3>
-            </div>
-          </div>
           <div className="px-4 py-5 sm:p-6">
-            {loading ? (
-              <div className="text-center py-4">Loading...</div>
-            ) : error ? (
-              <div className="text-center py-4 text-red-600">{error}</div>
-            ) : stockMovements.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">
-                No stock movements
-              </div>
-            ) : (
-              <DataTable
-                columns={stockMovementColumns}
-                data={stockMovements}
-                keyField="id"
-              />
-            )}
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Stock Movements</h2>
+            <DataTable<StockMovement>
+              columns={stockMovementColumns}
+              data={stockMovements}
+              keyExtractor={(item) => item.id}
+              isLoading={loading}
+            />
           </div>
         </div>
       </div>
