@@ -5,6 +5,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   user: any | null;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (userData: any) => Promise<void>;
@@ -18,6 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -100,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         loading,
         user,
+        error,
         login,
         logout,
         register,

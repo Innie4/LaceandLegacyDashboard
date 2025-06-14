@@ -306,7 +306,7 @@ const Promotions: React.FC = () => {
                 <Select
                   label="Discount Type"
                   value={formData.type}
-                  onChange={(e) => handleInputChange('type', e.target.value)}
+                  onChange={(value) => handleInputChange('type', value)}
                   options={[
                     { value: 'percentage', label: 'Percentage' },
                     { value: 'fixed', label: 'Fixed Amount' }
