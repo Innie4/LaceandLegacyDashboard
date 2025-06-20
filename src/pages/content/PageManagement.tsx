@@ -22,8 +22,8 @@ const PageManagement: React.FC = () => {
     const fetchPages = async () => {
       try {
         setLoading(true);
-        const fetchedPages = await contentService.getPages(filters);
-        setPages(fetchedPages);
+        // Use mock: just setPages to an empty array or local mock data
+        setPages([]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch pages');
       } finally {

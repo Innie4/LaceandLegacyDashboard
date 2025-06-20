@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserPlusIcon, ShieldCheckIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import settingsService, { AdminUser, ActivityLog } from '../../services/settingsService';
+import { settingsService } from '../../services/settingsService';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
@@ -20,6 +20,29 @@ interface SelectEvent {
   target: {
     value: string;
   };
+}
+
+// Minimal local type definitions for mock frontend
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'super_admin' | 'manager' | 'staff';
+  status: 'active' | 'inactive';
+  lastLogin?: string;
+  twoFactorEnabled?: boolean;
+}
+
+interface ActivityLog {
+  id: string;
+  userName: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  createdAt: string;
+  ipAddress: string;
+  userAgent: string;
+  details: Record<string, any>;
 }
 
 const UserManagement: React.FC = () => {
@@ -46,10 +69,6 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, [debouncedSearch, filters.role, filters.status, currentPage]);
 
-  useEffect(() => {
-    fetchActivityLogs();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -66,15 +85,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const fetchActivityLogs = async () => {
-    try {
-      const data = await settingsService.getActivityLogs();
-      setActivityLogs(data);
-    } catch (err) {
-      toast.error('Failed to fetch activity logs');
-    }
-  };
-
   const handleFilterChange = (field: string, value: string | SelectEvent) => {
     const actualValue = typeof value === 'string' ? value : value.target.value;
     setFilters(prev => ({ ...prev, [field]: actualValue }));
@@ -82,22 +92,17 @@ const UserManagement: React.FC = () => {
   };
 
   const handleUserSave = async (userData: Partial<AdminUser>) => {
-    try {
-      setIsSubmitting(true);
-      if (selectedUser) {
-        await settingsService.updateAdminUser(selectedUser.id, userData);
-        toast.success('User updated successfully');
-      } else {
-        await settingsService.createAdminUser(userData);
-        toast.success('User created successfully');
-      }
-      setShowUserModal(false);
-      fetchUsers();
-    } catch (err) {
-      toast.error('Failed to save user');
-    } finally {
-      setIsSubmitting(false);
+    setIsSubmitting(true);
+    if (selectedUser) {
+      // No backend, just show success
+      toast.success('User updated successfully (mock)');
+    } else {
+      await settingsService.createAdminUser(userData);
+      toast.success('User created successfully (mock)');
     }
+    setShowUserModal(false);
+    fetchUsers();
+    setIsSubmitting(false);
   };
 
   const handleUserDelete = async (userId: string) => {
@@ -115,16 +120,11 @@ const UserManagement: React.FC = () => {
   };
 
   const handleToggle2FA = async (userId: string, enabled: boolean) => {
-    try {
-      setIsSubmitting(true);
-      await settingsService.updateAdminUser(userId, { twoFactorEnabled: enabled });
-      toast.success(`2FA ${enabled ? 'enabled' : 'disabled'} successfully`);
-      fetchUsers();
-    } catch (err) {
-      toast.error('Failed to update 2FA status');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setIsSubmitting(true);
+    // No backend, just show success
+    toast.success(`2FA ${enabled ? 'enabled' : 'disabled'} successfully (mock)`);
+    fetchUsers();
+    setIsSubmitting(false);
   };
 
   const handlePageChange = (newPage: number) => {

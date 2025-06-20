@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-black;
+    @apply bg-white text-black;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -15,36 +15,36 @@
 }
 
 @layer components {
-  .vintage-border {
-    @apply border-vintage border-black shadow-vintage;
+  .brand-border {
+    @apply border-brand border-black shadow-brand;
   }
   
-  .vintage-card {
-    @apply bg-cream-lightest vintage-border rounded-lg p-4;
+  .brand-card {
+    @apply bg-white brand-border rounded-lg p-4;
   }
   
-  .vintage-button {
-    @apply bg-brown-medium hover:bg-brown-dark text-cream-lightest font-serif px-4 py-2 rounded vintage-border transition-colors;
+  .brand-button {
+    @apply bg-black hover:bg-gray-900 text-white font-serif px-4 py-2 rounded brand-border transition-colors;
   }
   
-  .vintage-input {
-    @apply bg-cream-lightest vintage-border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-medium;
+  .brand-input {
+    @apply bg-white brand-border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900;
   }
   
-  .vintage-table {
-    @apply w-full bg-cream-lightest vintage-border rounded-lg overflow-hidden;
+  .brand-table {
+    @apply w-full bg-white brand-border rounded-lg overflow-hidden;
   }
   
-  .vintage-table th {
-    @apply bg-brown-medium text-cream-lightest font-serif px-4 py-2 text-left;
+  .brand-table th {
+    @apply bg-gray-100 text-black font-serif px-4 py-2 text-left;
   }
   
-  .vintage-table td {
-    @apply px-4 py-2 border-t border-gray-200;
+  .brand-table td {
+    @apply px-4 py-2 border-t border-gray-100;
   }
   
-  .vintage-table tr:hover {
-    @apply bg-cream-medium;
+  .brand-table tr:hover {
+    @apply bg-gray-100;
   }
 }
 

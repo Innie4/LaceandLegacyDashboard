@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
-import { orderService, Order } from '../../services/orderService';
+import { orderService } from '../../services/orderService';
 import { format } from 'date-fns';
 import {
   ArrowLeftIcon,
@@ -25,6 +25,15 @@ const paymentStatusColors = {
   failed: 'bg-status-red/10 text-status-red',
   refunded: 'bg-status-gray/10 text-status-gray',
 };
+
+// Define a minimal local Order type
+interface Order {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  items: any[];
+  [key: string]: any;
+}
 
 export const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -162,7 +171,7 @@ export const OrderDetail: React.FC = () => {
                 Order Items
               </h2>
               <div className="space-y-4">
-                {order.items.map((item) => (
+                {order.items.map((item: Order) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between py-4 border-b border-brown-light/20 last:border-0"
@@ -259,7 +268,7 @@ export const OrderDetail: React.FC = () => {
                   <span className="text-brown-light">Status</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      paymentStatusColors[order.paymentStatus]
+                      paymentStatusColors[order.paymentStatus as keyof typeof paymentStatusColors]
                     }`}
                   >
                     {order.paymentStatus.charAt(0).toUpperCase() +

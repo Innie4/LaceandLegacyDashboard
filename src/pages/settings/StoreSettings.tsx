@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { ClockIcon, CurrencyDollarIcon, TruckIcon, CreditCardIcon } from '@heroicons/react/24/outline';
-import settingsService, { StoreSettings, ShippingZone, ShippingMethod, PaymentGateway } from '../../services/settingsService';
+import { settingsService } from '../../services/settingsService';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import { toast } from 'react-hot-toast';
+
+// Minimal local type definitions for mock frontend
+interface StoreSettings {
+  name: string;
+  description: string;
+  contact: { email: string; phone: string; address: string };
+  businessHours: { [key: string]: { open: string; close: string; closed: boolean } };
+  timezone: string;
+  currency: { code: string; symbol: string; position: 'before' | 'after'; decimalPlaces: number };
+  tax: { enabled: boolean; rate: number; displayInclusive: boolean };
+  shipping: { zones: ShippingZone[]; methods: ShippingMethod[] };
+  payment: { gateways: PaymentGateway[]; defaultGateway: string };
+}
+
+interface ShippingZone { id: string; name: string; countries: string[]; }
+interface ShippingMethod { id: string; name: string; price: number; estimatedDays: string; }
+interface PaymentGateway { id: string; name: string; type: string; enabled: boolean; }
 
 const StoreSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -37,12 +54,11 @@ const StoreSettingsPage: React.FC = () => {
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
     if (!settings) return;
-
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setSettings(prev => {
+      setSettings((prev: StoreSettings | null) => {
         if (!prev) return null;
-        const parentObj = prev[parent as keyof typeof prev];
+        const parentObj = prev[parent as keyof StoreSettings];
         if (typeof parentObj !== 'object' || parentObj === null) return prev;
         return {
           ...prev,
@@ -53,23 +69,18 @@ const StoreSettingsPage: React.FC = () => {
         };
       });
     } else {
-      setSettings(prev => prev ? { ...prev, [field]: value } : null);
+      setSettings((prev: StoreSettings | null) => prev ? { ...prev, [field]: value } : null);
     }
   };
 
   const handleSaveSettings = async () => {
-    if (!settings) return;
-    try {
-      await settingsService.updateStoreSettings(settings);
-      toast.success('Settings saved successfully');
-    } catch (err) {
-      toast.error('Failed to save settings');
-    }
+    // No backend, just show success
+    toast.success('Settings saved successfully (mock)');
   };
 
   const handleBusinessHoursChange = (day: string, field: string, value: string | boolean) => {
     if (!settings) return;
-    setSettings(prev => prev ? {
+    setSettings((prev: StoreSettings | null) => prev ? {
       ...prev,
       businessHours: {
         ...prev.businessHours,
@@ -82,45 +93,22 @@ const StoreSettingsPage: React.FC = () => {
   };
 
   const handleShippingZoneSave = async (zone: Partial<ShippingZone>) => {
-    try {
-      if (selectedZone) {
-        await settingsService.updateShippingZone(selectedZone.id, zone);
-      } else {
-        await settingsService.createShippingZone(zone);
-      }
-      toast.success('Shipping zone saved successfully');
-      setShowShippingModal(false);
-      fetchSettings();
-    } catch (err) {
-      toast.error('Failed to save shipping zone');
-    }
+    // No backend, just show success
+    toast.success('Shipping zone saved successfully (mock)');
+    setShowShippingModal(false);
   };
 
   const handleShippingMethodSave = async (method: Partial<ShippingMethod>) => {
-    try {
-      if (selectedMethod) {
-        await settingsService.updateShippingMethod(selectedMethod.id, method);
-      } else {
-        await settingsService.createShippingMethod(method);
-      }
-      toast.success('Shipping method saved successfully');
-      setShowShippingModal(false);
-      fetchSettings();
-    } catch (err) {
-      toast.error('Failed to save shipping method');
-    }
+    // No backend, just show success
+    toast.success('Shipping method saved successfully (mock)');
+    setShowShippingModal(false);
   };
 
   const handlePaymentGatewaySave = async (gateway: Partial<PaymentGateway>) => {
     if (!selectedGateway) return;
-    try {
-      await settingsService.updatePaymentGateway(selectedGateway.id, gateway);
-      toast.success('Payment gateway updated successfully');
-      setShowPaymentModal(false);
-      fetchSettings();
-    } catch (err) {
-      toast.error('Failed to update payment gateway');
-    }
+    // No backend, just show success
+    toast.success('Payment gateway updated successfully (mock)');
+    setShowPaymentModal(false);
   };
 
   if (loading) {
@@ -191,39 +179,40 @@ const StoreSettingsPage: React.FC = () => {
                 { value: 'PST', label: 'Pacific Time' }
               ]}
             />
-            {Object.entries(settings.businessHours).map(([day, hours]) => (
-              <div key={day} className="flex items-center space-x-4">
-                <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {day.charAt(0).toUpperCase() + day.slice(1)}
-                  </label>
-                </div>
-                <div className="flex-1 flex items-center space-x-2">
+            {Object.entries(settings.businessHours).map(([day, hours]) => {
+              const h = hours as { open: string; close: string; closed: boolean };
+              return (
+                <div key={day} className="flex items-center space-x-4">
+                  <div className="w-24">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                    </label>
+                  </div>
                   <Input
                     type="time"
-                    value={hours.open}
+                    value={h.open}
                     onChange={(e) => handleBusinessHoursChange(day, 'open', e.target.value)}
-                    disabled={hours.closed}
+                    disabled={h.closed}
                   />
                   <span>to</span>
                   <Input
                     type="time"
-                    value={hours.close}
+                    value={h.close}
                     onChange={(e) => handleBusinessHoursChange(day, 'close', e.target.value)}
-                    disabled={hours.closed}
+                    disabled={h.closed}
                   />
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={hours.closed}
+                      checked={h.closed}
                       onChange={(e) => handleBusinessHoursChange(day, 'closed', e.target.checked)}
                       className="mr-2"
                     />
                     Closed
                   </label>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -331,7 +320,7 @@ const StoreSettingsPage: React.FC = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Shipping Zones</h3>
             <div className="space-y-4">
-              {settings.shipping.zones.map(zone => (
+              {settings.shipping.zones.map((zone: ShippingZone) => (
                 <div key={zone.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-center">
                     <div>
@@ -368,7 +357,7 @@ const StoreSettingsPage: React.FC = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Shipping Methods</h3>
             <div className="space-y-4">
-              {settings.shipping.methods.map(method => (
+              {settings.shipping.methods.map((method: ShippingMethod) => (
                 <div key={method.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-center">
                     <div>
@@ -410,7 +399,7 @@ const StoreSettingsPage: React.FC = () => {
         title="Payment Gateways"
       >
         <div className="space-y-4">
-          {settings.payment.gateways.map(gateway => (
+          {settings.payment.gateways.map((gateway: PaymentGateway) => (
             <div key={gateway.id} className="p-4 border rounded-lg">
               <div className="flex justify-between items-center">
                 <div>

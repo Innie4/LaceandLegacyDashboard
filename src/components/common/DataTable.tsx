@@ -51,11 +51,11 @@ export function DataTable<T>({
 
   if (isLoading) {
     return (
-      <div className="vintage-card animate-pulse">
+      <div className="brand-card animate-pulse">
         <div className="space-y-4">
-          <div className="h-8 bg-cream-dark rounded"></div>
+          <div className="h-8 bg-gray-100 rounded"></div>
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-12 bg-cream-light rounded"></div>
+            <div key={i} className="h-12 bg-gray-100 rounded"></div>
           ))}
         </div>
       </div>
@@ -63,9 +63,9 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="vintage-card overflow-hidden">
+    <div className="brand-card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="vintage-table">
+        <table className="brand-table">
           <thead>
             <tr>
               {columns.map((column) => (
@@ -88,7 +88,7 @@ export function DataTable<T>({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-8 text-brown-dark">
+                <td colSpan={columns.length} className="text-center py-8 text-gray-dark">
                   {emptyMessage}
                 </td>
               </tr>

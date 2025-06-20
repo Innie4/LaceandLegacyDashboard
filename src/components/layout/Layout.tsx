@@ -62,17 +62,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     <div className="min-h-screen bg-cream-lightest">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-cream-darkest transform transition-transform duration-200 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-200 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-4 border-b border-brown-lightest/20">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
           <Link to="/dashboard" className="flex items-center space-x-2">
-            <h1 className="text-xl font-serif text-brown-darkest">ThrowbackTee</h1>
+            <img src="/logo.jpg" alt="Lace & Legacy Logo" className="h-8 w-8 object-contain mr-2" />
+            <h1 className="text-xl font-serif text-white">Lace & Legacy</h1>
           </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden text-brown-dark hover:text-brown-darkest"
+            className="lg:hidden text-white hover:text-gray-300"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -87,8 +88,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               to={item.path}
               className={`flex items-center space-x-3 px-4 py-3 rounded-md mb-2 transition-colors duration-200 ${
                 location.pathname === item.path
-                  ? 'bg-brown-medium text-cream-lightest'
-                  : 'text-brown-dark hover:bg-brown-lightest/50'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-white hover:bg-gray-100 hover:text-black'
               }`}
             >
               {item.icon}
@@ -101,10 +102,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Main content */}
       <div className={`${isSidebarOpen ? 'lg:ml-64' : ''} transition-all duration-200`}>
         {/* Header */}
-        <header className="h-16 bg-cream-lightest border-b border-brown-lightest/20 flex items-center justify-between px-4">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4">
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden text-brown-dark hover:text-brown-darkest"
+            className="lg:hidden text-black hover:text-gray-900"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -112,12 +113,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </button>
 
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-brown-dark">
+            <div className="text-sm text-black">
               Welcome, {user?.name}
             </div>
             <button
               onClick={handleLogout}
-              className="vintage-button text-sm"
+              className="brand-button text-sm"
             >
               Logout
             </button>
@@ -125,7 +126,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-6 bg-white min-h-screen">
           {children}
         </main>
       </div>

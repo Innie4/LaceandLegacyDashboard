@@ -3,8 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
 import { DataTable } from '../../components/common/DataTable';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { orderService, Order, OrderFilters } from '../../services/orderService';
+import { orderService } from '../../services/orderService';
 import { format } from 'date-fns';
+
+// Define minimal local types for Order and OrderFilters
+interface Order {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  [key: string]: any;
+}
+interface OrderFilters {
+  [key: string]: any;
+}
 
 const statusColors = {
   pending: 'bg-status-yellow/10 text-status-yellow',
@@ -39,7 +50,7 @@ const OrderList: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const data = await orderService.getOrders(filters);
+      const data = await orderService.getOrders();
       setOrders(data);
       setError(null);
     } catch (err) {
@@ -64,7 +75,7 @@ const OrderList: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const blob = await orderService.exportOrders(filters);
+      const blob = await orderService.exportOrders();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -116,7 +127,7 @@ const OrderList: React.FC = () => {
       render: (order: Order) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[order.status]
+            statusColors[order.status as keyof typeof statusColors]
           }`}
         >
           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -130,7 +141,7 @@ const OrderList: React.FC = () => {
       render: (order: Order) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            paymentStatusColors[order.paymentStatus]
+            paymentStatusColors[order.paymentStatus as keyof typeof paymentStatusColors]
           }`}
         >
           {order.paymentStatus.charAt(0).toUpperCase() +
@@ -159,10 +170,10 @@ const OrderList: React.FC = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-serif text-brown-darkest">Orders</h1>
+          <h1 className="text-2xl font-serif text-black">Orders</h1>
           <button
             onClick={handleExport}
-            className="vintage-button flex items-center space-x-2"
+            className="brand-button flex items-center space-x-2"
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             <span>Export</span>
@@ -170,22 +181,22 @@ const OrderList: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="vintage-card">
+        <div className="brand-card">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 text-brown-light absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <MagnifyingGlassIcon className="w-5 h-5 text-gray-900 absolute left-3 top-1/2 transform -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search orders..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="vintage-input pl-10 w-full"
+                className="brand-input pl-10 w-full"
               />
             </div>
             <select
               value={filters.status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="vintage-select"
+              className="brand-input"
             >
               <option value="">All Status</option>
               <option value="pending">Pending</option>
@@ -197,7 +208,7 @@ const OrderList: React.FC = () => {
             <select
               value={filters.paymentStatus}
               onChange={(e) => handlePaymentStatusChange(e.target.value)}
-              className="vintage-select"
+              className="brand-input"
             >
               <option value="">All Payment Status</option>
               <option value="pending">Pending</option>

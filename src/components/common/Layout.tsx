@@ -30,8 +30,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-xl font-bold text-indigo-600">
-                  ThrowbackTee Admin
+                <Link to="/" className="text-xl font-bold text-black">
+                  Lace & Legacy Admin
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -41,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     to={item.path}
                     className={`${
                       location.pathname === item.path
-                        ? 'border-indigo-500 text-gray-900'
+                        ? 'border-black text-black'
                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                     } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                   >
@@ -53,12 +53,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               <div className="ml-3 relative">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-black">
                     {user?.name || 'Admin User'}
                   </span>
                   <button
                     onClick={logout}
-                    className="text-sm text-gray-500 hover:text-gray-700"
+                    className="brand-button text-sm"
                   >
                     Logout
                   </button>

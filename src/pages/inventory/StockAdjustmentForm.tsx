@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { inventoryService } from '../../services/inventoryService';
+import inventoryService from '../../services/inventoryService';
 import { productService } from '../../services/productService';
+
+// Define local type for StockAdjustment
+interface StockAdjustment {
+  productId: string;
+  quantity: number;
+  reason: string;
+}
 
 const StockAdjustmentForm: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +46,8 @@ const StockAdjustmentForm: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await inventoryService.adjustStock(form.productId, {
+      await inventoryService.adjustStock({
+        productId: form.productId,
         quantity: Number(form.quantity),
         type: form.type as 'in' | 'out' | 'adjustment',
         reason: form.reason,
@@ -65,7 +73,7 @@ const StockAdjustmentForm: React.FC = () => {
             value={form.productId}
             onChange={handleChange}
             required
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
           >
             <option value="">Select a product</option>
             {products.map((p) => (
@@ -83,7 +91,7 @@ const StockAdjustmentForm: React.FC = () => {
             value={form.quantity}
             onChange={handleChange}
             required
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
           />
         </div>
         <div>
@@ -93,7 +101,7 @@ const StockAdjustmentForm: React.FC = () => {
             value={form.type}
             onChange={handleChange}
             required
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
           >
             <option value="in">Stock In</option>
             <option value="out">Stock Out</option>
@@ -108,7 +116,7 @@ const StockAdjustmentForm: React.FC = () => {
             value={form.reason}
             onChange={handleChange}
             required
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
           />
         </div>
         <div>
@@ -117,7 +125,7 @@ const StockAdjustmentForm: React.FC = () => {
             name="notes"
             value={form.notes}
             onChange={handleChange}
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
           />
         </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}

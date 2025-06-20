@@ -9,7 +9,7 @@ interface LoginFormData {
 }
 
 const Login: React.FC = () => {
-  const { login, error } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -23,7 +23,7 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password);
-      navigate(from, { replace: true });
+      navigate('/dashboard');
     } catch (err) {
       // Error is handled by the auth context
     }
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-cream-lightest flex items-center justify-center p-4">
       <div className="vintage-card w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-serif text-brown-darkest mb-2">ThrowbackTee</h1>
+          <h1 className="text-3xl font-serif text-brown-darkest mb-2">Lace & Legacy</h1>
           <p className="text-brown-dark">Admin Dashboard</p>
         </div>
 
@@ -52,8 +52,8 @@ const Login: React.FC = () => {
                   message: 'Invalid email address',
                 },
               })}
-              className="vintage-input w-full"
-              placeholder="admin@throwbacktee.com"
+              className="brand-input w-full"
+              placeholder="admin@lace-legacy.com"
             />
             {errors.email && (
               <p className="mt-1 text-sm text-status-red">{errors.email.message}</p>
@@ -82,16 +82,10 @@ const Login: React.FC = () => {
             )}
           </div>
 
-          {error && (
-            <div className="p-3 bg-status-red/10 border border-status-red rounded text-status-red text-sm">
-              {error}
-            </div>
-          )}
-
           <button
             type="submit"
             disabled={isSubmitting}
-            className="vintage-button w-full flex items-center justify-center"
+            className="brand-button w-full flex items-center justify-center"
           >
             {isSubmitting ? (
               <>
@@ -104,9 +98,9 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-brown-dark">
+        <div className="mt-6 text-center text-sm text-black">
           <p>Demo Credentials:</p>
-          <p>Email: admin@throwbacktee.com</p>
+          <p>Email: admin@lace-legacy.com</p>
           <p>Password: admin123</p>
         </div>
       </div>

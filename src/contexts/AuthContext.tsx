@@ -1,11 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   user: any | null;
-  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (userData: any) => Promise<void>;
@@ -15,85 +13,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const MOCK_USER = { name: 'Demo User', email: 'admin@lace-legacy.com', role: 'super_admin' };
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(response.data);
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      localStorage.removeItem('token');
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [loading] = useState(false);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
-        email,
-        password
-      });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setUser(user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
-    }
+    setUser(MOCK_USER);
+    setIsAuthenticated(true);
+    return Promise.resolve();
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
   };
 
   const register = async (userData: any) => {
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, userData);
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setUser(user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
-    }
+    setUser({ ...MOCK_USER, ...userData });
+    setIsAuthenticated(true);
+    return Promise.resolve();
   };
 
   const forgotPassword = async (email: string) => {
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/auth/forgot-password`, { email });
-    } catch (error) {
-      throw error;
-    }
+    return Promise.resolve();
   };
 
   const resetPassword = async (token: string, password: string) => {
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/auth/reset-password`, {
-        token,
-        password
-      });
-    } catch (error) {
-      throw error;
-    }
+    return Promise.resolve();
   };
 
   return (
@@ -102,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         loading,
         user,
-        error,
         login,
         logout,
         register,

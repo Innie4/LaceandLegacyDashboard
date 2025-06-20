@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
 import { DataTable } from '../../components/common/DataTable';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon, UserPlusIcon } from '@heroicons/react/24/outline';
-import { customerService, Customer, CustomerFilters } from '../../services/customerService';
+import { customerService } from '../../services/customerService';
 import { format } from 'date-fns';
 
 const statusColors = {
@@ -17,6 +17,31 @@ const segmentColors = {
   regular: 'bg-status-green/10 text-status-green',
   vip: 'bg-status-purple/10 text-status-purple',
 };
+
+// Minimal local types for mock frontend
+interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  status: 'active' | 'inactive' | 'blocked';
+  segment: 'new' | 'regular' | 'vip';
+  totalOrders: number;
+  totalSpent: number;
+  averageOrderValue: number;
+  lastOrderDate?: string;
+  registrationDate: string;
+  addresses: any[];
+  notes: any[];
+  tags: string[];
+}
+
+interface CustomerFilters {
+  search?: string;
+  status?: string;
+  segment?: string;
+}
 
 const CustomerList: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +61,7 @@ const CustomerList: React.FC = () => {
   const fetchCustomers = async () => {
     try {
       setIsLoading(true);
-      const data = await customerService.getCustomers(filters);
+      const data = await customerService.getCustomers();
       setCustomers(data);
       setError(null);
     } catch (err) {
@@ -48,32 +73,19 @@ const CustomerList: React.FC = () => {
   };
 
   const handleSearch = (value: string) => {
-    setFilters((prev) => ({ ...prev, search: value }));
+    setFilters((prev: CustomerFilters) => ({ ...prev, search: value }));
   };
 
   const handleStatusChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, status: value }));
+    setFilters((prev: CustomerFilters) => ({ ...prev, status: value }));
   };
 
   const handleSegmentChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, segment: value }));
+    setFilters((prev: CustomerFilters) => ({ ...prev, segment: value }));
   };
 
   const handleExport = async () => {
-    try {
-      const blob = await customerService.exportCustomers(filters);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `customers-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error('Error exporting customers:', err);
-      setError('Failed to export customers. Please try again later.');
-    }
+    // No backend: just show a toast or do nothing
   };
 
   const columns = [
@@ -97,7 +109,7 @@ const CustomerList: React.FC = () => {
       render: (customer: Customer) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            segmentColors[customer.segment]
+            segmentColors[customer.segment as keyof typeof segmentColors]
           }`}
         >
           {customer.segment.toUpperCase()}
@@ -132,7 +144,7 @@ const CustomerList: React.FC = () => {
       render: (customer: Customer) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[customer.status]
+            statusColors[customer.status as keyof typeof statusColors]
           }`}
         >
           {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}

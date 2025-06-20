@@ -3,7 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
 import { DataTable, Column } from '../../components/common/DataTable';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { productService, Product, ProductFilters } from '../../services/productService';
+import { productService } from '../../services/productService';
+
+// Define minimal local types for Product and ProductFilters
+interface Product {
+  id: string;
+  name: string;
+  status: string;
+  [key: string]: any;
+}
+interface ProductFilters {
+  [key: string]: any;
+}
 
 const statusColors = {
   active: 'bg-status-green/10 text-status-green',
@@ -38,9 +49,9 @@ const ProductList: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await productService.getProducts(filters);
-      setProducts(result.data);
-      setTotalPages(result.totalPages);
+      const result = await productService.getProducts();
+      setProducts(result);
+      setTotalPages(1);
     } catch (err) {
       setError('Failed to fetch products');
     } finally {
@@ -187,7 +198,7 @@ const ProductList: React.FC = () => {
       render: (product: Product) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[product.status]
+            statusColors[product.status as keyof typeof statusColors]
           }`}
         >
           {editingCell?.id === product.id && editingCell?.field === 'status' ? (
@@ -215,10 +226,10 @@ const ProductList: React.FC = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-serif text-brown-darkest">Products</h1>
+          <h1 className="text-2xl font-serif text-black">Products</h1>
           <button
             onClick={() => navigate('/products/new')}
-            className="vintage-button flex items-center space-x-2"
+            className="brand-button flex items-center space-x-2"
           >
             <PlusIcon className="w-5 h-5" />
             <span>Add Product</span>
@@ -226,24 +237,24 @@ const ProductList: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="vintage-card">
+        <div className="brand-card">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 text-brown-light absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <MagnifyingGlassIcon className="w-5 h-5 text-gray-900 absolute left-3 top-1/2 transform -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={filters.search}
                 onChange={handleFilterChange}
                 name="search"
-                className="vintage-input pl-10 w-full"
+                className="brand-input pl-10 w-full"
               />
             </div>
             <select
               value={filters.category}
               onChange={handleFilterChange}
               name="category"
-              className="vintage-select"
+              className="brand-input"
             >
               <option value="">All Categories</option>
               <option value="T-Shirts">T-Shirts</option>
@@ -254,7 +265,7 @@ const ProductList: React.FC = () => {
               value={filters.status}
               onChange={handleFilterChange}
               name="status"
-              className="vintage-select"
+              className="brand-input"
             >
               <option value="">All Status</option>
               <option value="active">Active</option>

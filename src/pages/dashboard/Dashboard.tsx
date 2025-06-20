@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import { formatCurrency } from '../../utils/formatters';
+import {Layout} from '../../components/layout/Layout';
 
 interface DashboardStats {
   totalSales: number;
@@ -106,19 +107,20 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
+    <Layout>
+      {/* Removed the header section (Welcome back, {user?.name}!) */}
+      {/* <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Welcome back, {user?.name}!
         </h1>
         <p className="text-gray-600">Here's what's happening with your store today.</p>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Total Sales</h3>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">
+            <h3 className="text-sm font-medium text-gray-900">Total Sales</h3>
+            <p className="mt-2 text-3xl font-semibold text-black">
               {formatCurrency(stats?.totalSales || 0)}
             </p>
           </div>
@@ -126,8 +128,8 @@ const Dashboard: React.FC = () => {
 
         <Card>
           <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Total Orders</h3>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">
+            <h3 className="text-sm font-medium text-gray-900">Total Orders</h3>
+            <p className="mt-2 text-3xl font-semibold text-black">
               {stats?.totalOrders || 0}
             </p>
           </div>
@@ -135,8 +137,8 @@ const Dashboard: React.FC = () => {
 
         <Card>
           <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Total Customers</h3>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">
+            <h3 className="text-sm font-medium text-gray-900">Total Customers</h3>
+            <p className="mt-2 text-3xl font-semibold text-black">
               {stats?.totalCustomers || 0}
             </p>
           </div>
@@ -144,8 +146,8 @@ const Dashboard: React.FC = () => {
 
         <Card>
           <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Average Order Value</h3>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">
+            <h3 className="text-sm font-medium text-gray-900">Average Order Value</h3>
+            <p className="mt-2 text-3xl font-semibold text-black">
               {formatCurrency(stats?.averageOrderValue || 0)}
             </p>
           </div>
@@ -257,7 +259,7 @@ const Dashboard: React.FC = () => {
           </div>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
 };
 

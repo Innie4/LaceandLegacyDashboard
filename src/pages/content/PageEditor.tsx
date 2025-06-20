@@ -71,24 +71,30 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
   }, [id]);
 
   const fetchPage = async () => {
-    try {
-      setLoading(true);
-      const data = await pageService.getPage(id!);
-      setPage(data);
-      setFormData({
-        title: data.title,
-        slug: data.slug,
-        status: data.status,
-        template: data.template,
-        seo: data.seo
-      });
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch page');
-      toast.error('Failed to fetch page');
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const data = {
+      id: id!,
+      title: 'Mock Page',
+      slug: 'mock-page',
+      content: { components: [] },
+      status: 'draft' as 'draft',
+      template: '',
+      seo: { title: '', description: '', keywords: [] },
+      createdAt: '',
+      updatedAt: '',
+      version: 1,
+      revisions: []
+    };
+    setPage(data);
+    setFormData({
+      title: data.title,
+      slug: data.slug,
+      status: data.status,
+      template: data.template,
+      seo: data.seo
+    });
+    setError(null);
+    setLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -151,45 +157,19 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false }) => {
   };
 
   const handleSave = async () => {
-    try {
-      if (isNew) {
-        const newPage = await pageService.createPage({
-          ...formData,
-          content: page?.content || { components: [] }
-        });
-        navigate(`/content/pages/${newPage.id}/edit`);
-      } else {
-        await pageService.updatePage(id!, {
-          ...formData,
-          content: page?.content
-        });
-        toast.success('Page saved successfully');
-      }
-    } catch (err) {
-      toast.error('Failed to save page');
-    }
+    // Mock save: just update local state and show toast
+    setPage(prev => prev ? { ...prev, ...formData } : null);
+    toast.success('Page saved (mock)');
   };
 
   const handlePublish = async () => {
-    try {
-      await pageService.publishPage(id!);
-      toast.success('Page published successfully');
-      fetchPage();
-    } catch (err) {
-      toast.error('Failed to publish page');
-    }
+    toast.success('Page published (mock)');
   };
 
   const handleAnalyzeSEO = async () => {
-    try {
-      if (!page) return;
-      const analysis = await pageService.analyzeSEO(
-        page.content.components.map((c: PageComponent) => c.props.text).join(' ') || ''
-      );
-      setSeoAnalysis(analysis);
-    } catch (err) {
-      toast.error('Failed to analyze SEO');
-    }
+    if (!page) return;
+    setSeoAnalysis({ score: 100, message: 'SEO is great!' });
+    console.log('SEO analysis: OK');
   };
 
   const renderComponent = (component: PageComponent) => {

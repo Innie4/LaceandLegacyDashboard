@@ -1,16 +1,18 @@
-# ThrowbackTee Admin Dashboard
+# Lace & Legacy Admin Dashboard
 
-A comprehensive admin dashboard for ThrowbackTee, a vintage fashion e-commerce platform. The dashboard is designed with a vintage aesthetic and provides powerful tools for managing e-commerce operations.
+A comprehensive admin dashboard for Lace & Legacy, a modern fashion e-commerce platform. The dashboard is designed with a minimalist black and white aesthetic and provides powerful tools for managing e-commerce operations.
+
+![Lace & Legacy Logo](public/logo.jpg)
 
 ## Features
 
 - 🔐 Secure authentication system
 - 📊 Real-time analytics and metrics
-- 👕 Product management
+- 👗 Product management
 - 📦 Order management
 - 👥 Customer management
 - 📈 Sales and inventory tracking
-- 🎨 Vintage-inspired design system
+- 🖤 Minimalist black & white design system
 
 ## Tech Stack
 
@@ -21,7 +23,7 @@ A comprehensive admin dashboard for ThrowbackTee, a vintage fashion e-commerce p
 - React Hook Form
 - Chart.js
 - Zustand (State Management)
-- Axios (API Client)
+- Axios (API)
 
 ## Getting Started
 
@@ -34,8 +36,8 @@ A comprehensive admin dashboard for ThrowbackTee, a vintage fashion e-commerce p
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/throwbacktee-admin.git
-   cd throwbacktee-admin
+   git clone https://github.com/your-username/lace-legacy-admin.git
+   cd lace-legacy-admin
    ```
 
 2. Install dependencies:
@@ -52,7 +54,7 @@ The application will be available at `http://localhost:3000`.
 
 ### Demo Credentials
 
-- Email: admin@throwbacktee.com
+- Email: admin@lace-legacy.com
 - Password: admin123
 
 ## Project Structure
@@ -63,7 +65,7 @@ src/
 │   ├── common/         # Reusable components
 │   ├── layout/         # Layout components
 │   └── ui/            # UI components
-├── context/           # React context providers
+├── contexts/          # React context providers
 ├── hooks/             # Custom React hooks
 ├── pages/             # Page components
 ├── services/          # API services
@@ -73,29 +75,20 @@ src/
 
 ## Design System
 
-The dashboard uses a vintage-inspired color palette:
+The dashboard uses a minimalist black and white color palette:
 
-- Brown Family:
-  - Darkest: #2C1810
-  - Dark: #4A2C2A
-  - Medium: #8B4513
-  - Light: #A67C52
-  - Lightest: #D2B48C
-
-- Cream Family:
-  - Darkest: #F5E6D3
-  - Dark: #F8EBD8
-  - Medium: #FAF0E1
-  - Light: #FDF5E6
-  - Lightest: #FFF8F0
+- Black: #000000
+- White: #FFFFFF
+- Dark Gray: #333333
+- Light Gray: #F5F5F5
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create your feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Create a new Pull Request
 
 ## License
 

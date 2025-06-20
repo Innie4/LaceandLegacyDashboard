@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
-import { customerService, Customer, Address, CustomerNote } from '../../services/customerService';
+import { customerService } from '../../services/customerService';
 import { format } from 'date-fns';
 import {
   ArrowLeftIcon,
@@ -25,6 +25,41 @@ const segmentColors = {
   vip: 'bg-status-purple/10 text-status-purple',
 };
 
+// Minimal local types for mock frontend
+interface Address {
+  id: string;
+  type: 'shipping' | 'billing';
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  zipCode: string;
+  isDefault: boolean;
+}
+interface CustomerNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+}
+interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  status: 'active' | 'inactive' | 'blocked';
+  segment: 'new' | 'regular' | 'vip';
+  totalOrders: number;
+  totalSpent: number;
+  averageOrderValue: number;
+  lastOrderDate?: string;
+  registrationDate: string;
+  addresses: Address[];
+  notes: CustomerNote[];
+  tags: string[];
+}
+
 export const CustomerDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,7 +78,24 @@ export const CustomerDetail: React.FC = () => {
     if (!id) return;
     try {
       setIsLoading(true);
-      const data = await customerService.getCustomer(id);
+      // Use mock: set a dummy customer
+      const data: Customer = {
+        id: id!,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        phone: '123-456-7890',
+        status: 'active',
+        segment: 'regular',
+        totalOrders: 5,
+        totalSpent: 500,
+        averageOrderValue: 100,
+        lastOrderDate: '',
+        registrationDate: '',
+        addresses: [],
+        notes: [],
+        tags: [],
+      };
       setCustomer(data);
       setError(null);
     } catch (err) {
@@ -55,71 +107,50 @@ export const CustomerDetail: React.FC = () => {
   };
 
   const handleStatusUpdate = async (newStatus: Customer['status']) => {
-    if (!customer || !id) return;
-    try {
-      const updatedCustomer = await customerService.updateCustomer(id, {
-        status: newStatus,
-      });
-      setCustomer(updatedCustomer);
-    } catch (err) {
-      setError('Failed to update customer status. Please try again later.');
-      console.error('Error updating customer status:', err);
-    }
+    if (!customer) return;
+    setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
   };
 
   const handleSegmentUpdate = async (newSegment: Customer['segment']) => {
-    if (!customer || !id) return;
-    try {
-      const updatedCustomer = await customerService.updateCustomer(id, {
-        segment: newSegment,
-      });
-      setCustomer(updatedCustomer);
-    } catch (err) {
-      setError('Failed to update customer segment. Please try again later.');
-      console.error('Error updating customer segment:', err);
-    }
+    if (!customer) return;
+    setCustomer(prev => prev ? { ...prev, segment: newSegment } : null);
   };
 
-  const handleAddNote = async () => {
-    if (!customer || !id || !newNote.trim()) return;
-    try {
-      const note = await customerService.addCustomerNote(id, {
-        content: newNote,
-        createdBy: 'Admin', // Replace with actual admin user
-      });
-      setCustomer({
-        ...customer,
-        notes: [...customer.notes, note],
-      });
-      setNewNote('');
-    } catch (err) {
-      setError('Failed to add note. Please try again later.');
-      console.error('Error adding note:', err);
-    }
+  const handleAddNote = async (note: Omit<CustomerNote, 'id' | 'createdAt'>) => {
+    if (!customer || !newNote.trim()) return;
+    const newNoteObj: CustomerNote = {
+      ...note,
+      id: Math.random().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: note.createdBy || 'Admin',
+    };
+    setCustomer(prev => prev ? {
+      ...prev,
+      notes: [...prev.notes, newNoteObj]
+    } : null);
+    setNewNote('');
   };
 
   const handleDeleteNote = async (noteId: string) => {
     if (!customer || !id) return;
     try {
-      await customerService.deleteCustomerNote(id, noteId);
-      setCustomer({
-        ...customer,
-        notes: customer.notes.filter((note) => note.id !== noteId),
-      });
+      setCustomer(prev => prev ? {
+        ...prev,
+        notes: prev.notes.filter(note => note.id !== noteId)
+      } : null);
     } catch (err) {
       setError('Failed to delete note. Please try again later.');
       console.error('Error deleting note:', err);
     }
   };
 
-  const handleAddTag = async () => {
+  const handleAddTag = async (tag: string) => {
     if (!customer || !id || !newTag.trim()) return;
     try {
-      const tags = await customerService.addCustomerTag(id, newTag);
-      setCustomer({
-        ...customer,
-        tags,
-      });
+      setCustomer(prev => prev ? {
+        ...prev,
+        tags: [...prev.tags, tag]
+      } : null);
       setNewTag('');
     } catch (err) {
       setError('Failed to add tag. Please try again later.');
@@ -130,14 +161,78 @@ export const CustomerDetail: React.FC = () => {
   const handleRemoveTag = async (tag: string) => {
     if (!customer || !id) return;
     try {
-      const tags = await customerService.removeCustomerTag(id, tag);
-      setCustomer({
-        ...customer,
-        tags,
-      });
+      setCustomer(prev => prev ? {
+        ...prev,
+        tags: prev.tags.filter(t => t !== tag)
+      } : null);
     } catch (err) {
       setError('Failed to remove tag. Please try again later.');
       console.error('Error removing tag:', err);
+    }
+  };
+
+  const handleAddressUpdate = async (address: Address) => {
+    if (!customer || !id) return;
+    try {
+      setCustomer(prev => prev ? {
+        ...prev,
+        addresses: prev.addresses.map(a => a.id === address.id ? address : a)
+      } : null);
+    } catch (err) {
+      setError('Failed to update address. Please try again later.');
+      console.error('Error updating address:', err);
+    }
+  };
+
+  const handleNoteChange = (note: CustomerNote) => {
+    if (!customer || !id) return;
+    try {
+      setCustomer(prev => prev ? {
+        ...prev,
+        notes: prev.notes.map(n => n.id === note.id ? note : n)
+      } : null);
+    } catch (err) {
+      setError('Failed to update note. Please try again later.');
+      console.error('Error updating note:', err);
+    }
+  };
+
+  const handleAddressChange = (address: Address) => {
+    if (!customer || !id) return;
+    try {
+      setCustomer(prev => prev ? {
+        ...prev,
+        addresses: prev.addresses.map(a => a.id === address.id ? address : a)
+      } : null);
+    } catch (err) {
+      setError('Failed to update address. Please try again later.');
+      console.error('Error updating address:', err);
+    }
+  };
+
+  const handleTagChange = (tag: string) => {
+    if (!customer || !id) return;
+    try {
+      setCustomer(prev => prev ? {
+        ...prev,
+        tags: [...prev.tags, tag]
+      } : null);
+    } catch (err) {
+      setError('Failed to update tag. Please try again later.');
+      console.error('Error updating tag:', err);
+    }
+  };
+
+  const handleNoteInputChange = (note: CustomerNote) => {
+    if (!customer || !id) return;
+    try {
+      setCustomer(prev => prev ? {
+        ...prev,
+        notes: prev.notes.map(n => n.id === note.id ? note : n)
+      } : null);
+    } catch (err) {
+      setError('Failed to update note. Please try again later.');
+      console.error('Error updating note:', err);
     }
   };
 
@@ -275,7 +370,7 @@ export const CustomerDetail: React.FC = () => {
                     className="vintage-input flex-1"
                   />
                   <button
-                    onClick={handleAddNote}
+                    onClick={() => handleAddNote({ content: newNote, createdBy: 'Admin' })}
                     className="vintage-button flex items-center space-x-2"
                   >
                     <PlusIcon className="w-5 h-5" />
@@ -376,7 +471,7 @@ export const CustomerDetail: React.FC = () => {
                     className="vintage-input flex-1"
                   />
                   <button
-                    onClick={handleAddTag}
+                    onClick={() => handleAddTag(newTag)}
                     className="vintage-button flex items-center space-x-2"
                   >
                     <PlusIcon className="w-5 h-5" />

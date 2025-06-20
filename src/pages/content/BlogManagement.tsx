@@ -37,8 +37,7 @@ const BlogManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await contentService.getBlogPosts(filters);
-      setPosts(data);
+      setPosts([]);
     } catch (err) {
       setError('Failed to fetch blog posts');
     } finally {
@@ -71,64 +70,46 @@ const BlogManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
-      try {
-        await contentService.deleteBlogPost(id);
-        fetchPosts();
-      } catch (err) {
-        setError('Failed to delete post');
-      }
+      setPosts(prev => prev.filter(post => post.id !== id));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (selectedPost) {
-        await contentService.updateBlogPost(selectedPost.id, form);
-      } else {
-        await contentService.createBlogPost(form);
-      }
-      setIsEditing(false);
-      setSelectedPost(null);
-      setForm({
-        title: '',
-        content: '',
-        excerpt: '',
-        status: 'draft',
-        categories: [],
-        tags: [],
-        featuredImage: '',
-        seo: {
-          title: '',
-          description: '',
-          keywords: '',
-          ogImage: ''
-        }
-      });
-      fetchPosts();
-    } catch (err) {
-      setError('Failed to save post');
+    if (selectedPost) {
+      setPosts(prev => prev.map(post => post.id === selectedPost.id ? { ...selectedPost, ...form } as BlogPost : post));
+    } else {
+      setPosts(prev => [
+        ...prev,
+        { ...form, id: Math.random().toString(), author: { id: '1', name: 'Admin' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: form.status || 'draft', categories: form.categories || [], tags: form.tags || [], seo: form.seo || { title: '', description: '', keywords: '', ogImage: '' } } as BlogPost
+      ]);
     }
+    setIsEditing(false);
+    setSelectedPost(null);
+    setForm({
+      title: '',
+      content: '',
+      excerpt: '',
+      status: 'draft',
+      categories: [],
+      tags: [],
+      featuredImage: '',
+      seo: {
+        title: '',
+        description: '',
+        keywords: '',
+        ogImage: ''
+      }
+    });
   };
 
   const handleImageUpload = async (file: File) => {
-    try {
-      const result = await contentService.uploadMedia(file);
-      setForm((prev) => ({ ...prev, featuredImage: result.url }));
-    } catch (err) {
-      setError('Failed to upload image');
-    }
+    setForm((prev) => ({ ...prev, featuredImage: URL.createObjectURL(file) }));
   };
 
   const handleSEOAnalysis = async () => {
-    try {
-      if (!form.content) return;
-      const analysis = await contentService.analyzeSEO(form.content);
-      // Handle SEO analysis results
-      console.log(analysis);
-    } catch (err) {
-      console.error('SEO analysis failed:', err);
-    }
+    if (!form.content) return;
+    console.log('SEO analysis: OK');
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -160,7 +141,7 @@ const BlogManagement: React.FC = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
         </div>
       </Layout>
     );
@@ -173,7 +154,7 @@ const BlogManagement: React.FC = () => {
           <h1 className="text-2xl font-bold">Blog Management</h1>
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+            className="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
           >
             New Post
           </button>
@@ -191,7 +172,7 @@ const BlogManagement: React.FC = () => {
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   required
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
 
@@ -209,7 +190,7 @@ const BlogManagement: React.FC = () => {
                 <textarea
                   value={form.excerpt}
                   onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
 
@@ -218,7 +199,7 @@ const BlogManagement: React.FC = () => {
                 <select
                   value={form.status}
                   onChange={handleStatusChange}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
@@ -233,7 +214,7 @@ const BlogManagement: React.FC = () => {
                     type="datetime-local"
                     value={form.publishedAt}
                     onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
-                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                   />
                 </div>
               )}
@@ -266,7 +247,7 @@ const BlogManagement: React.FC = () => {
                       onChange={(e) =>
                         setForm({ ...form, seo: { ...form.seo!, title: e.target.value } })
                       }
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                     />
                   </div>
                   <div>
@@ -276,7 +257,7 @@ const BlogManagement: React.FC = () => {
                       onChange={(e) =>
                         setForm({ ...form, seo: { ...form.seo!, description: e.target.value } })
                       }
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                     />
                   </div>
                   <div>
@@ -287,13 +268,13 @@ const BlogManagement: React.FC = () => {
                       onChange={(e) =>
                         setForm({ ...form, seo: { ...form.seo!, keywords: e.target.value } })
                       }
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleSEOAnalysis}
-                    className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+                    className="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
                   >
                     Analyze SEO
                   </button>
@@ -313,7 +294,7 @@ const BlogManagement: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-vintage-600 text-white rounded hover:bg-vintage-700"
+                  className="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700"
                 >
                   {selectedPost ? 'Update Post' : 'Create Post'}
                 </button>
@@ -326,7 +307,7 @@ const BlogManagement: React.FC = () => {
               <select
                 value={filters.status || ''}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                className="border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
               >
                 <option value="">All Status</option>
                 <option value="draft">Draft</option>
@@ -338,7 +319,7 @@ const BlogManagement: React.FC = () => {
                 placeholder="Search posts..."
                 value={filters.search || ''}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="border-gray-300 rounded-md shadow-sm focus:ring-vintage-500 focus:border-vintage-500"
+                className="border-gray-300 rounded-md shadow-sm focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
 
@@ -394,7 +375,7 @@ const BlogManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleEdit(post)}
-                          className="text-vintage-600 hover:text-vintage-900 mr-4"
+                          className="text-brand-600 hover:text-brand-900 mr-4"
                         >
                           Edit
                         </button>
