@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import contentService, { ContentFilters, BlogPost, Category, Tag } from '../../services/contentService';
-import Layout from '../../components/common/Layout';
+import {Layout} from '../../components/layout/Layout';
 
 const BlogManagement: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);

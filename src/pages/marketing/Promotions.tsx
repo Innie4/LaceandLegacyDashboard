@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { DataTable, Column } from '../../components/common/DataTable';
 import marketingService, { Promotion } from '../../services/marketingService';
-import Layout from '../../components/common/Layout';
+import {Layout} from '../../components/layout/Layout';
 import { PlusIcon, PencilIcon, TrashIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -217,6 +217,15 @@ const Promotions: React.FC = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="max-w-7xl mx-auto py-8">

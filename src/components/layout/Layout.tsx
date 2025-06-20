@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  ArchiveBoxIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  MegaphoneIcon,
+  ArrowLeftOnRectangleIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
+import LogoutDialog from '../LogoutDialog';
 
 interface NavItem {
   label: string;
@@ -45,10 +54,36 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  {
+    label: 'Inventory',
+    path: '/inventory',
+    icon: <ArchiveBoxIcon className="w-5 h-5" />, 
+  },
+  {
+    label: 'Analytics',
+    path: '/analytics/sales',
+    icon: <ChartBarIcon className="w-5 h-5" />, 
+  },
+  {
+    label: 'Content',
+    path: '/content/blog',
+    icon: <DocumentTextIcon className="w-5 h-5" />, 
+  },
+  {
+    label: 'Marketing',
+    path: '/marketing/promotions',
+    icon: <MegaphoneIcon className="w-5 h-5" />, 
+  },
+  {
+    label: 'Settings',
+    path: '/settings/store',
+    icon: <Cog6ToothIcon className="w-5 h-5" />, 
+  },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -87,7 +122,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               key={item.path}
               to={item.path}
               className={`flex items-center space-x-3 px-4 py-3 rounded-md mb-2 transition-colors duration-200 ${
-                location.pathname === item.path
+                location.pathname.startsWith(item.path)
                   ? 'bg-gray-900 text-white'
                   : 'text-white hover:bg-gray-100 hover:text-black'
               }`}
@@ -96,7 +131,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <span>{item.label}</span>
             </Link>
           ))}
+          <button
+            onClick={() => setShowLogoutDialog(true)}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-md mb-2 transition-colors duration-200 text-white hover:bg-gray-100 hover:text-black w-full`}
+          >
+            <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
         </nav>
+        <LogoutDialog
+          isOpen={showLogoutDialog}
+          onClose={() => setShowLogoutDialog(false)}
+          onConfirm={() => {
+            setShowLogoutDialog(false);
+            handleLogout();
+          }}
+        />
       </aside>
 
       {/* Main content */}

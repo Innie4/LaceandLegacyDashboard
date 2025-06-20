@@ -15,7 +15,7 @@ import {
   Cell,
 } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import Layout from '../../components/common/Layout';
+import {Layout} from '../../components/layout/Layout';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 

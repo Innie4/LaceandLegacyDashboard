@@ -9,7 +9,7 @@ import {
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
-import Layout from '../../components/common/Layout';
+import {Layout} from '../../components/layout/Layout';
 import { DataTable, Column } from '../../components/common/DataTable';
 import inventoryService from '../../services/inventoryService';
 import { formatCurrency } from '../../utils/formatters';
