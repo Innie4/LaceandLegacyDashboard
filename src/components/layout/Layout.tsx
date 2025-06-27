@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -82,11 +82,31 @@ const navItems: NavItem[] = [
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isSidebarOpen || window.innerWidth >= 1024) return;
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setIsSidebarOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [isSidebarOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -97,12 +117,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     <div className="min-h-screen bg-cream-lightest">
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-200 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
-          <Link to="/dashboard" className="flex items-center space-x-2">
+          <Link to="/dashboard" className="flex items-center space-x-2" onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}>
             <img src="/logo.jpg" alt="Lace & Legacy Logo" className="h-8 w-8 object-contain mr-2" />
             <h1 className="text-xl font-serif text-white">Lace & Legacy</h1>
           </Link>
@@ -121,6 +142,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => {
+                if (window.innerWidth < 1024) setIsSidebarOpen(false);
+              }}
               className={`flex items-center space-x-3 px-4 py-3 rounded-md mb-2 transition-colors duration-200 ${
                 location.pathname.startsWith(item.path)
                   ? 'bg-gray-900 text-white'
