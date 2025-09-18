@@ -80,16 +80,6 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Product Management Routes */}
-          <Route
-            path="/products"
-            element={
-              <ProtectedRoute>
                 <ProductList />
               </ProtectedRoute>
             }

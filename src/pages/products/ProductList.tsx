@@ -69,27 +69,7 @@ const ProductList: React.FC = () => {
   };
 
   const handleBulkAction = async (action: string) => {
-    if (selectedProducts.length === 0) return;
-    try {
-      switch (action) {
-        case 'delete':
-          await productService.bulkDeleteProducts(selectedProducts);
-          break;
-        case 'updateStatus':
-          await productService.bulkUpdateProducts(selectedProducts, { status: 'active' });
-          break;
-        case 'updatePrice':
-          const newPrice = prompt('Enter new price:');
-          if (newPrice) {
-            await productService.bulkUpdateProducts(selectedProducts, { regularPrice: parseFloat(newPrice) });
-          }
-          break;
-      }
-      fetchProducts();
-      setSelectedProducts([]);
-    } catch (err) {
-      setError('Failed to perform bulk action');
-    }
+  // Bulk actions removed. Only single product delete/update allowed in minimal dashboard.
   };
 
   const handleQuickEdit = async (id: string, field: string, value: string) => {

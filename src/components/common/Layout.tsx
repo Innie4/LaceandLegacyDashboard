@@ -11,15 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { logout, user } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', path: '/' },
-    { name: 'Products', path: '/products' },
-    { name: 'Orders', path: '/orders' },
-    { name: 'Customers', path: '/customers' },
-    { name: 'Inventory', path: '/inventory' },
-    { name: 'Analytics', path: '/analytics/sales' },
-    { name: 'Content', path: '/content/blog' },
-    { name: 'Marketing', path: '/marketing/promotions' },
-    { name: 'Settings', path: '/settings/store' }
+  { name: 'Products', path: '/products' }
   ];
 
   return (
