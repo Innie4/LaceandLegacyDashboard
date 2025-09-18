@@ -9,8 +9,9 @@ import { productService } from '../../services/productService';
 interface Product {
   id: string;
   name: string;
-  status: string;
-  [key: string]: any;
+  price: number;
+  quantity: number;
+  image: string;
 }
 interface ProductFilters {
   [key: string]: any;
@@ -84,123 +85,75 @@ const ProductList: React.FC = () => {
 
   const columns: Column<Product>[] = [
     {
-      key: 'select',
-      header: 'Select',
+      key: 'image',
+      header: 'Image',
       sortable: false,
       render: (product: Product) => (
-        <input
-          type="checkbox"
-          checked={selectedProducts.includes(product.id)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedProducts([...selectedProducts, product.id]);
-            } else {
-              setSelectedProducts(selectedProducts.filter((id) => id !== product.id));
-            }
-          }}
-        />
+        <img src={product.image || '/placeholder.png'} alt={product.name} className="w-10 h-10 rounded object-cover" />
       )
     },
     {
       key: 'name',
-      header: 'Product Name',
+      header: 'Name',
       sortable: true,
-      render: (product: Product) => (
-        <div className="flex items-center space-x-3">
-          <img
-            src={product.images[0] || '/placeholder.png'}
-            alt={product.name}
-            className="w-10 h-10 rounded object-cover"
-          />
-          <span>{product.name}</span>
-        </div>
-      )
+      render: (product: Product) => <span>{product.name}</span>
     },
     {
-      key: 'sku',
-      header: 'SKU',
-      sortable: true,
-      render: (product: Product) => product.sku
-    },
-    {
-      key: 'category',
-      header: 'Category',
-      sortable: true,
-      render: (product: Product) => product.category
-    },
-    {
-      key: 'regularPrice',
+      key: 'price',
       header: 'Price',
       sortable: true,
+      render: (product: Product) => <span>${product.price.toFixed(2)}</span>
+    },
+    {
+      key: 'quantity',
+      header: 'Quantity',
+      sortable: true,
+      render: (product: Product) => <span>{product.quantity}</span>
+    },
+    {
+      key: 'availability',
+      header: 'Availability',
+      sortable: false,
       render: (product: Product) => (
-        <div>
-          {editingCell?.id === product.id && editingCell?.field === 'price' ? (
-            <input
-              type="number"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={() => handleQuickEdit(product.id, 'regularPrice', editValue)}
-              autoFocus
-            />
-          ) : (
-            <span onClick={() => { setEditingCell({ id: product.id, field: 'price' }); setEditValue(product.regularPrice.toFixed(2)); }}>
-              ${product.regularPrice.toFixed(2)}
-            </span>
-          )}
-          {product.salePrice && (
-            <span className="ml-2 text-status-red">
-              ${product.salePrice.toFixed(2)}
-            </span>
-          )}
+        <span className={product.quantity > 0 ? 'text-green-600' : 'text-red-600'}>
+          {product.quantity > 0 ? 'Available' : 'Out of Stock'}
+        </span>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      sortable: false,
+      render: (product: Product) => (
+        <div className="flex space-x-2">
+          <button
+            className="text-blue-600 hover:underline"
+            onClick={() => navigate(`/products/${product.id}`)}
+          >Edit</button>
+          <button
+            className="text-red-600 hover:underline"
+            onClick={() => handleDelete(product.id)}
+          >Delete</button>
         </div>
-      )
-    },
-    {
-      key: 'stock',
-      header: 'Stock',
-      sortable: true,
-      render: (product: Product) => (
-        <span
-          className={
-            product.stock <= product.lowStockThreshold
-              ? 'text-status-red'
-              : ''
-          }
-        >
-          {product.stock}
-        </span>
-      )
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (product: Product) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            statusColors[product.status as keyof typeof statusColors]
-          }`}
-        >
-          {editingCell?.id === product.id && editingCell?.field === 'status' ? (
-            <select
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={() => handleQuickEdit(product.id, 'status', editValue)}
-              autoFocus
-            >
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
-            </select>
-          ) : (
-            <span onClick={() => { setEditingCell({ id: product.id, field: 'status' }); setEditValue(product.status); }}>
-              {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-            </span>
-          )}
-        </span>
       )
     }
   ];
+
+  // ...existing code...
+  // Add handleDelete function for delete logic
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await productService.deleteProduct(id);
+      fetchProducts();
+    } catch (err) {
+      setError('Failed to delete product');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Layout>
@@ -215,48 +168,7 @@ const ProductList: React.FC = () => {
             <span>Add Product</span>
           </button>
         </div>
-
-        {/* Filters */}
-        <div className="brand-card">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 text-gray-900 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={filters.search}
-                onChange={handleFilterChange}
-                name="search"
-                className="brand-input pl-10 w-full"
-              />
-            </div>
-            <select
-              value={filters.category}
-              onChange={handleFilterChange}
-              name="category"
-              className="brand-input"
-            >
-              <option value="">All Categories</option>
-              <option value="T-Shirts">T-Shirts</option>
-              <option value="Hoodies">Hoodies</option>
-              <option value="Accessories">Accessories</option>
-            </select>
-            <select
-              value={filters.status}
-              onChange={handleFilterChange}
-              name="status"
-              className="brand-input"
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-        </div>
-
         {error && <div className="text-red-600">{error}</div>}
-
         <div className="vintage-card">
           <DataTable<Product>
             columns={columns}

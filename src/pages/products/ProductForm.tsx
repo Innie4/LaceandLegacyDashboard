@@ -8,6 +8,7 @@ interface ProductFormData {
   name: string;
   price: number;
   description: string;
+  quantity: number;
   image: string;
 }
 
@@ -15,6 +16,7 @@ const defaultValues: ProductFormData = {
   name: '',
   price: 0,
   description: '',
+  quantity: 0,
   image: '',
 };
 
@@ -34,7 +36,7 @@ const ProductForm: React.FC = () => {
       })
         .then(res => res.json())
         .then(data => {
-          reset({ name: data.name, price: data.price, description: data.description, image: data.image });
+          reset({ name: data.name, price: data.price, description: data.description, quantity: data.quantity, image: data.image });
         })
         .catch(() => setError('Failed to load product'))
         .finally(() => { setLoading(false); setInitialLoaded(true); });
@@ -111,6 +113,18 @@ const ProductForm: React.FC = () => {
               )}
             />
             {errors.price && <p className="mt-1 text-sm text-status-red">{errors.price.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brown-darkest mb-1">Quantity</label>
+            <Controller
+              name="quantity"
+              control={control}
+              rules={{ required: 'Quantity is required', min: 0 }}
+              render={({ field }) => (
+                <input {...field} type="number" className="vintage-input w-full" placeholder="Enter quantity" />
+              )}
+            />
+            {errors.quantity && <p className="mt-1 text-sm text-status-red">{errors.quantity.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-brown-darkest mb-1">Description</label>
