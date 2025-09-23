@@ -25,6 +25,7 @@ const ProductForm: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { control, handleSubmit, formState: { errors }, reset } = useForm<ProductFormData>({ defaultValues });
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -46,6 +47,7 @@ const ProductForm: React.FC = () => {
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true);
     setError(null);
+    setSuccess(null);
     try {
       const method = id ? 'PUT' : 'POST';
       const url = id
@@ -60,7 +62,8 @@ const ProductForm: React.FC = () => {
         body: JSON.stringify(data)
       });
       if (!res.ok) throw new Error('API error');
-      navigate('/products');
+      setSuccess(id ? 'Product updated successfully!' : 'Product added successfully!');
+      setTimeout(() => navigate('/products'), 1200);
     } catch (error) {
       setError('Error saving product');
     } finally {
@@ -88,6 +91,7 @@ const ProductForm: React.FC = () => {
           <h1 className="text-2xl font-serif text-brown-darkest">{id ? 'Edit Product' : 'Add New Product'}</h1>
         </div>
         {error && <div className="text-status-red">{error}</div>}
+  {success && <div className="text-green-600 font-semibold mb-2">{success}</div>}
         {loading && <div>Loading...</div>}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
