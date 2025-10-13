@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { Layout } from '../../components/layout/Layout';
+import { productService } from '../../services/productService';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface ProductFormData {
@@ -32,12 +33,15 @@ const ProductForm: React.FC = () => {
   React.useEffect(() => {
     if (id && !initialLoaded) {
       setLoading(true);
-      fetch(`https://likwapu-ecommerce-backend.fly.dev/api/products/${id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
-        .then(res => res.json())
+      productService.getProduct(id)
         .then(data => {
-          reset({ name: data.name, price: data.price, description: data.description, quantity: data.quantity, image: data.image });
+          reset({
+            name: data.name,
+            price: Number(data.price),
+            description: data.description,
+            quantity: Number(data.quantity),
+            image: data.image,
+          });
         })
         .catch(() => setError('Failed to load product'))
         .finally(() => { setLoading(false); setInitialLoaded(true); });
@@ -49,19 +53,11 @@ const ProductForm: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const method = id ? 'PUT' : 'POST';
-      const url = id
-        ? `https://likwapu-ecommerce-backend.fly.dev/api/products/${id}`
-        : `https://likwapu-ecommerce-backend.fly.dev/api/products`;
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error('API error');
+      if (id) {
+        await productService.updateProduct(id, data);
+      } else {
+        await productService.createProduct(data);
+      }
       setSuccess(id ? 'Product updated successfully!' : 'Product added successfully!');
       setTimeout(() => navigate('/products'), 1200);
     } catch (error) {
@@ -164,4 +160,4 @@ const ProductForm: React.FC = () => {
   );
 };
 
-export default ProductForm; 
+export default ProductForm;
